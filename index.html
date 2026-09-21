@@ -1,0 +1,678 @@
+<title>阪神 複勝判定ボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --bg:#F2EFE8; --panel:#FBF9F5; --edge:#D8D2C5; --edge2:#EAE5DA;
+    --ink:#1C2128; --ink2:#5A5F68; --ink3:#8B8F98;
+    --accent:#9A6B1F; --accent-soft:#F0E4CC;
+    --go:#1F6B4A; --go-soft:#DCEBE2;
+    --hold:#6F7681; --hold-soft:#E7E7E4;
+    --miss:#9B3B27;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#11161C; --panel:#182028; --edge:#2B353F; --edge2:#222B34;
+    --ink:#E7E3DA; --ink2:#A2A9B3; --ink3:#6E767F;
+    --accent:#D9A84E; --accent-soft:#2E2618;
+    --go:#4FBE8B; --go-soft:#12271E;
+    --hold:#8A929C; --hold-soft:#1D242B;
+    --miss:#E08872;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#11161C; --panel:#182028; --edge:#2B353F; --edge2:#222B34;
+    --ink:#E7E3DA; --ink2:#A2A9B3; --ink3:#6E767F;
+    --accent:#D9A84E; --accent-soft:#2E2618;
+    --go:#4FBE8B; --go-soft:#12271E;
+    --hold:#8A929C; --hold-soft:#1D242B;
+    --miss:#E08872;
+  }
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Zen Kaku Gothic New",-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding-inline:16px; padding-block:0 52px}
+  .mono{font-family:"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums}
+  button{font:inherit; color:inherit; background:none; border:0; cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+  header{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:10;
+    background:var(--bg); border-bottom:1px solid var(--edge);
+    margin-inline:-16px; padding:9px 16px 8px;
+  }
+  .hrow{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .htitle{font-size:13px; font-weight:700; letter-spacing:.05em; color:var(--ink2); min-width:0;
+          overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .hclock{font-size:12px; color:var(--ink3); flex:0 0 auto}
+  .back{font-size:12.5px; color:var(--accent); font-weight:700; padding:2px 0; flex:0 0 auto}
+
+  /* 判定パネル */
+  .verdict{margin-top:16px; border:1px solid var(--edge); border-radius:3px; background:var(--panel); overflow:hidden}
+  .vtop{display:flex; align-items:stretch; border-bottom:1px solid var(--edge2)}
+  .vmark{flex:0 0 auto; width:80px; display:grid; place-items:center; border-right:1px solid var(--edge2);
+         font-size:30px; font-weight:900}
+  .vmark.no{background:var(--hold-soft); color:var(--hold)}
+  .vmark.go{background:var(--go-soft); color:var(--go)}
+  .vbody{flex:1 1 auto; padding:13px 15px; min-width:0}
+  .vlabel{font-size:10.5px; letter-spacing:.14em; color:var(--ink3); font-weight:700}
+  .vmain{font-size:22px; font-weight:900; line-height:1.25; margin-top:2px; text-wrap:balance}
+  .vsub{font-size:12.5px; color:var(--ink2); margin-top:5px}
+  .vmeta{display:flex; gap:16px; flex-wrap:wrap; padding:8px 15px; font-size:11px; color:var(--ink3)}
+  .vmeta b{color:var(--ink2); font-weight:500}
+  .stale{color:var(--miss); font-weight:700}
+  .warnbar{
+    margin-top:12px; padding:9px 13px; border:1px solid var(--miss); border-radius:3px;
+    background:var(--panel); font-size:12px; color:var(--miss); line-height:1.5;
+  }
+  .warnbar b{font-weight:700}
+
+  h2{font-size:11.5px; letter-spacing:.14em; color:var(--ink3); font-weight:700; margin:24px 0 8px}
+
+  /* レース一覧（カード列） */
+  .rlist{display:grid; gap:1px; background:var(--edge2); border:1px solid var(--edge); border-radius:3px; overflow:hidden}
+  .rcard{
+    display:grid; grid-template-columns:34px 1fr auto; gap:11px; align-items:center;
+    background:var(--panel); padding:10px 13px; width:100%; text-align:left;
+  }
+  .rcard:hover{background:var(--accent-soft)}
+  .rcard.next{background:var(--accent-soft)}
+  .rcard.done{opacity:.55}
+  .rno{font-size:16px; font-weight:900; color:var(--ink3); text-align:center}
+  .rmid{min-width:0}
+  .rname{font-size:13.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .rsub{font-size:11px; color:var(--ink3); margin-top:1px}
+  .rright{text-align:right; flex:0 0 auto}
+  .rbest{font-size:14px; font-weight:700; color:var(--ink2)}
+  .rbest.over{color:var(--go)}
+  .rarrow{font-size:10.5px; color:var(--ink3); margin-top:1px}
+  .pill{display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; font-weight:700}
+  .pill.go{background:var(--go-soft); color:var(--go)}
+  .pill.shape{background:var(--hold-soft); color:var(--ink2)}
+
+  /* レース詳細 */
+  .sec{margin-top:14px; border:1px solid var(--edge); border-radius:3px; background:var(--panel); overflow:hidden}
+  .sechead{padding:9px 14px; border-bottom:1px solid var(--edge2); font-size:11px;
+           letter-spacing:.1em; font-weight:700; color:var(--ink3)}
+  .secbody{padding:12px 14px; font-size:13px}
+  .secbody p{margin:0 0 9px} .secbody p:last-child{margin:0}
+  .kv{display:flex; gap:16px; flex-wrap:wrap; padding:10px 14px; font-size:12px; border-bottom:1px solid var(--edge2)}
+  .kv div{white-space:nowrap} .kv b{color:var(--ink3); font-weight:500; font-size:10.5px; display:block}
+
+  .hrow2{display:grid; grid-template-columns:20px 1fr 62px 62px; gap:9px; align-items:center;
+         padding:7px 14px; border-bottom:1px solid var(--edge2); font-size:12.5px}
+  .hrow2:last-child{border-bottom:0}
+  .hrow2.head{font-size:10px; letter-spacing:.06em; color:var(--ink3); font-weight:700}
+  .hrank{font-size:11px; color:var(--ink3); text-align:center}
+  .hname{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .hodds{text-align:right; color:var(--ink2)}
+  .hdv{text-align:right; font-weight:500}
+  .pos{color:var(--go)} .neg{color:var(--miss)}
+  .thr{color:var(--ink3); font-size:10.5px}
+
+  /* 出走馬カード */
+  .hcard{padding:10px 13px; border-bottom:1px solid var(--edge2)}
+  .hcard:last-child{border-bottom:0}
+  .hcard.target{background:var(--accent-soft)}
+  .h1{display:flex; align-items:baseline; gap:7px; flex-wrap:wrap}
+  .hpop{font-size:10px; font-weight:700; color:var(--ink3); background:var(--hold-soft);
+        padding:1px 5px; border-radius:2px; flex:0 0 auto}
+  .hpop.t{background:var(--accent); color:#fff}
+  .mpop{font-size:10px; font-weight:700; padding:1px 5px; border-radius:2px; flex:0 0 auto;
+        background:var(--hold-soft); color:var(--ink3)}
+  .mpop.up{background:var(--go-soft); color:var(--go)}
+  .mpop.dn{background:var(--panel); color:var(--miss); border:1px solid var(--miss)}
+  .pickbar{padding:10px 14px; border-bottom:1px solid var(--edge2); font-size:12.5px}
+  .pickbar.dis{background:var(--accent-soft)}
+  .pickbar b{font-weight:700}
+  .pickbar .sub{display:block; font-size:11px; color:var(--ink3); margin-top:2px}
+  .hnm{font-size:14px; font-weight:700}
+  .hsub{font-size:11px; color:var(--ink3)}
+  .h2r{display:flex; gap:14px; flex-wrap:wrap; margin-top:5px; font-size:12px}
+  .h2r div{white-space:nowrap}
+  .h2r b{display:block; font-size:9.5px; letter-spacing:.06em; color:var(--ink3); font-weight:500}
+  .h3r{margin-top:5px; font-size:11px; color:var(--ink3)}
+  .h3r span:not(:last-child)::after{content:" ／ "; color:var(--edge)}
+  .ev{font-weight:700}
+  .ev.good{color:var(--go)} .ev.bad{color:var(--ink3)}
+  .dvbar{display:inline-block; width:44px; height:5px; background:var(--hold-soft);
+         border-radius:3px; position:relative; vertical-align:middle; margin-left:5px}
+  .dvbar i{position:absolute; top:0; height:5px; border-radius:3px}
+  .dvbar i.p{left:50%; background:var(--go)} .dvbar i.n{right:50%; background:var(--miss)}
+  .legend{padding:13px 14px; font-size:12px; color:var(--ink2); line-height:1.7; border-top:1px solid var(--edge2)}
+  .legend b{color:var(--ink); font-weight:700}
+  .lgitem{margin-bottom:16px} .lgitem:last-child{margin-bottom:0}
+  .lgitem>b{display:block; font-size:12.5px; margin-bottom:5px; padding-bottom:4px;
+            border-bottom:1px solid var(--edge2)}
+  .legend p{margin:0 0 6px} .legend p:last-child{margin:0}
+  .legend .howto{padding-left:9px; border-left:2px solid var(--accent); color:var(--ink)}
+  .legend .dt{margin:8px 0}
+
+  .cond{display:grid; grid-template-columns:20px 1fr auto; gap:9px; align-items:center;
+        padding:8px 14px; border-bottom:1px solid var(--edge2); font-size:12.5px}
+  .cond:last-child{border-bottom:0}
+  .cmark{text-align:center; font-weight:700}
+  .cmark.ok{color:var(--go)} .cmark.ng{color:var(--miss)}
+  .cname small{display:block; color:var(--ink3); font-size:10.5px; line-height:1.4}
+
+  .fbrow{display:grid; grid-template-columns:54px 1fr; gap:11px; align-items:start;
+         padding:9px 14px; border-bottom:1px solid var(--edge2)}
+  .fbrow:last-child{border-bottom:0}
+  .fbroi{font-size:15px; font-weight:700; text-align:right; color:var(--ink3)}
+  .fbroi.over{color:var(--go)}
+  .fbbet{font-size:13px; font-weight:500}
+  .fbpick{font-size:12px; color:var(--ink2); margin-top:1px}
+  .fbmeta{font-size:10.5px; color:var(--ink3); margin-top:2px}
+  .fbwarn{font-size:10.5px; color:var(--miss); margin-top:3px; padding-left:7px; border-left:2px solid var(--miss)}
+
+  .note{margin-top:24px; padding:13px 15px; border-left:2px solid var(--accent);
+        background:var(--panel); border-radius:0 3px 3px 0; font-size:12.5px; color:var(--ink2)}
+  .note b{color:var(--ink); font-weight:700}
+  .note p{margin:0 0 8px} .note p:last-child{margin:0}
+  .note ul{margin:6px 0 0; padding-left:17px} .note li{margin:3px 0}
+  .log{margin-top:8px; font-size:11px; color:var(--ink3); display:flex; flex-wrap:wrap; gap:3px 9px}
+  /* 解説ページ */
+  .navlink{
+    display:block; width:100%; text-align:left; margin-top:12px; padding:11px 14px;
+    border:1px solid var(--edge); border-radius:3px; background:var(--panel); font-size:13px;
+  }
+  .navlink:hover{background:var(--accent-soft)}
+  .navlink b{display:block; font-weight:700}
+  .navlink small{color:var(--ink3); font-size:11.5px}
+  .doc{font-size:13.5px; line-height:1.85}
+  .doc h3{font-size:14px; font-weight:900; margin:26px 0 8px; letter-spacing:.01em}
+  .doc h3:first-child{margin-top:16px}
+  .doc p{margin:0 0 11px}
+  .doc ul{margin:0 0 11px; padding-left:19px} .doc li{margin:4px 0}
+  .doc .lead{font-size:14px; color:var(--ink2); border-left:2px solid var(--accent);
+             padding-left:12px; margin-bottom:18px}
+  .doc code{font-family:"Roboto Mono",monospace; font-size:12px; background:var(--hold-soft);
+            padding:1px 5px; border-radius:2px}
+  .dt{overflow-x:auto; margin:0 0 14px; border:1px solid var(--edge); border-radius:3px}
+  .dt table{border-collapse:collapse; width:100%; min-width:380px; font-size:12px; background:var(--panel)}
+  .dt th{background:var(--panel); text-align:left; font-size:10.5px; letter-spacing:.05em; color:var(--ink3);
+         padding:7px 10px; border-bottom:1px solid var(--edge); white-space:nowrap}
+  .dt td{padding:7px 10px; border-bottom:1px solid var(--edge2); white-space:nowrap}
+  .dt tr:last-child td{border-bottom:0}
+  .dt td.num{text-align:right; font-family:"Roboto Mono",monospace; font-variant-numeric:tabular-nums}
+  .dt .hi{color:var(--go); font-weight:700} .dt .lo{color:var(--miss)}
+  .callout{margin:0 0 14px; padding:11px 14px; background:var(--panel); border:1px solid var(--edge);
+           border-radius:3px; font-size:12.5px; color:var(--ink2)}
+  .callout b{color:var(--ink)}
+
+  footer{margin-top:20px; font-size:10.5px; color:var(--ink3); line-height:1.7}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="hrow">
+      <button class="back" id="back" hidden>← 一覧</button>
+      <div class="htitle" id="htitle">2026-09-21 阪神 ／ 2番人気の複勝</div>
+      <div class="hclock mono" id="clock">--:--</div>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+  const POSTS=[null,"10:00","10:35","11:05","11:35","12:25","12:55","13:25","13:55","14:25","15:05","15:45","16:30"];
+  const OK_CLS=new Set(["新馬","未勝利","2勝","3勝"]);
+  const STATE = {"date":"2026-09-21","venue":"阪神","updatedAt":"08:50","updatedAtMin":530,"oddsTime":"2026-09-21 07:40:30","targetRace":11,"lead":30,"verdict":"no-bet","bets":[],"reason":"R11は集中度が不足（m3=0.708）、2番人気の乖離が負（-0.225）、対象外クラス（OP重賞）。他の11レースも条件を満たしません。","races":[{"r":1,"name":"２歳未勝利","cls":"未勝利","value":[],"modelPick":{"no":3,"name":"ポカポカヨウキ","mktRank":1,"odds":1.9,"agree":true},"nMoved":0,"shape":"2〜3強","shapeDesc":"上位数頭に絞られているが、その中の序列は決まっていない","dom12":1.68,"n":8,"post":"10:00","top5":[{"rank":1,"no":3,"name":"ポカポカヨウキ","odds":1.9,"mkt":0.416,"mdl":0.439,"dv":0.054},{"rank":2,"no":8,"name":"エコロラーダ","odds":3.2,"mkt":0.247,"mdl":0.225,"dv":-0.093},{"rank":3,"no":6,"name":"ランズエンド","odds":7.9,"mkt":0.1,"mdl":0.103,"dv":0.033},{"rank":4,"no":5,"name":"ガヤーズサムライ","odds":8.4,"mkt":0.094,"mdl":0.093,"dv":-0.016},{"rank":5,"no":2,"name":"マコトブリッツ","odds":16.1,"mkt":0.049,"mdl":0.049,"dv":-0.006}],"horses":[{"rank":1,"mrank":1,"no":3,"gate":3,"name":"ポカポカヨウキ","sex":"牡","age":2,"jockey":"松若","trainer":"東田","odds":1.9,"plcLow":1.1,"plcHigh":1.1,"mkt":0.416,"mdl":0.439,"dv":0.054,"p3":76.9,"evLo":84.5,"evHi":84.5,"prevFin":0.2,"prevPop":2,"rest":22,"starts":1,"wtDiff":0,"leg":"逃げ・先行","jkyWin":5.4,"classUp":0},{"rank":2,"mrank":2,"no":8,"gate":8,"name":"エコロラーダ","sex":"牡","age":2,"jockey":"坂井","trainer":"大久保","odds":3.2,"plcLow":1.1,"plcHigh":2.1,"mkt":0.247,"mdl":0.225,"dv":-0.093,"p3":65.4,"evLo":71.9,"evHi":137.3,"prevFin":0.4,"prevPop":5,"rest":107,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":16.4,"classUp":0},{"rank":3,"mrank":3,"no":6,"gate":6,"name":"ランズエンド","sex":"牡","age":2,"jockey":"今村","trainer":"野中","odds":7.9,"plcLow":1.7,"plcHigh":6.0,"mkt":0.1,"mdl":0.103,"dv":0.033,"p3":36.4,"evLo":62.0,"evHi":218.7,"prevFin":0.62,"prevPop":4,"rest":58,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":3.8,"classUp":0},{"rank":4,"mrank":4,"no":5,"gate":5,"name":"ガヤーズサムライ","sex":"牡","age":2,"jockey":"幸","trainer":"田中勝","odds":8.4,"plcLow":1.3,"plcHigh":4.4,"mkt":0.094,"mdl":0.093,"dv":-0.016,"p3":38.0,"evLo":49.4,"evHi":167.0,"prevFin":0.5,"prevPop":6,"rest":22,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":6.0,"classUp":0},{"rank":5,"mrank":5,"no":2,"gate":2,"name":"マコトブリッツ","sex":"牡","age":2,"jockey":"富田","trainer":"武英","odds":16.1,"plcLow":2.1,"plcHigh":8.0,"mkt":0.049,"mdl":0.049,"dv":-0.006,"p3":21.7,"evLo":45.5,"evHi":173.4,"prevFin":0.73,"prevPop":4,"rest":36,"starts":1,"wtDiff":0,"leg":"差し","jkyWin":4.2,"classUp":0},{"rank":6,"mrank":6,"no":1,"gate":1,"name":"ハイネスプラウド","sex":"牡","age":2,"jockey":"河原田","trainer":"武井","odds":19.0,"plcLow":2.6,"plcHigh":10.7,"mkt":0.042,"mdl":0.048,"dv":0.132,"p3":21.2,"evLo":55.0,"evHi":226.5,"prevFin":0.69,"prevPop":8,"rest":23,"starts":1,"wtDiff":0,"leg":"逃げ・先行","jkyWin":0.0,"classUp":0},{"rank":7,"mrank":8,"no":7,"gate":7,"name":"ゴルディアス","sex":"牡","age":2,"jockey":"田山","trainer":"小崎","odds":28.8,"plcLow":3.9,"plcHigh":16.4,"mkt":0.027,"mdl":0.015,"dv":-0.577,"p3":13.7,"evLo":53.3,"evHi":224.3,"prevFin":1.0,"prevPop":6,"rest":8,"starts":3,"wtDiff":0,"leg":"追い込み","jkyWin":5.2,"classUp":0},{"rank":8,"mrank":7,"no":4,"gate":4,"name":"ワンダーラヴグッド","sex":"牝","age":2,"jockey":"酒井","trainer":"羽月","odds":33.2,"plcLow":3.9,"plcHigh":16.6,"mkt":0.024,"mdl":0.027,"dv":0.14,"p3":12.1,"evLo":47.3,"evHi":201.2,"prevFin":0.7,"prevPop":11,"rest":22,"starts":1,"wtDiff":0,"leg":"差し","jkyWin":4.7,"classUp":0}],"miss":["2番人気の乖離が負（-0.093）＝モデルは市場より低く見ている"],"options":[{"bet":"ワイド(1-3番人気)","roi":93.4,"n":607,"hit":37.1,"pick":"3番 ポカポカヨウキ × 6番 ランズエンド","odds":null},{"bet":"1番人気の複勝","roi":92.8,"n":680,"hit":82.6,"pick":"3番 ポカポカヨウキ","odds":1.9},{"bet":"2番人気の複勝","roi":92.5,"n":607,"hit":62.9,"pick":"8番 エコロラーダ","odds":3.2},{"bet":"ワイド(1-2番人気)","roi":87.0,"n":607,"hit":53.4,"pick":"3番 ポカポカヨウキ × 8番 エコロラーダ","odds":null},{"bet":"3番人気の複勝","roi":85.6,"n":640,"hit":43.4,"pick":"6番 ランズエンド","odds":7.9},{"bet":"馬連(1-2番人気)","roi":85.1,"n":607,"hit":29.3,"pick":"3番 ポカポカヨウキ × 8番 エコロラーダ","odds":null}],"m3":0.7637,"dv":-0.0926,"p2no":8,"p2name":"エコロラーダ","p2odds":3.2,"oddsTime":"2026-09-21 07:55:25","oddsAge":125,"plc":[[1.1,2.1]],"ok":false},{"r":2,"name":"２歳未勝利","cls":"未勝利","value":[],"modelPick":{"no":3,"name":"ハマナスノサクコロ","mktRank":2,"odds":4.3,"agree":false},"nMoved":0,"shape":"上位拮抗","shapeDesc":"上位は固まっているが抜けた存在がいない","dom12":1.23,"n":10,"post":"10:35","top5":[{"rank":1,"no":1,"name":"マリアンデール","odds":3.5,"mkt":0.227,"mdl":0.194,"dv":-0.155},{"rank":2,"no":3,"name":"ハマナスノサクコロ","odds":4.3,"mkt":0.185,"mdl":0.218,"dv":0.165},{"rank":3,"no":5,"name":"リアンフィニ","odds":4.8,"mkt":0.165,"mdl":0.165,"dv":-0.001},{"rank":4,"no":9,"name":"ラガッタレアーレ","odds":5.8,"mkt":0.137,"mdl":0.144,"dv":0.049},{"rank":5,"no":8,"name":"パルフェクシオン","odds":6.3,"mkt":0.126,"mdl":0.128,"dv":0.018}],"horses":[{"rank":1,"mrank":2,"no":1,"gate":1,"name":"マリアンデール","sex":"牝","age":2,"jockey":"岩田望","trainer":"中村","odds":3.5,"plcLow":1.7,"plcHigh":2.3,"mkt":0.227,"mdl":0.194,"dv":-0.155,"p3":54.0,"evLo":91.8,"evHi":124.2,"prevFin":0.29,"prevPop":6,"rest":58,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":14.4,"classUp":0},{"rank":2,"mrank":1,"no":3,"gate":3,"name":"ハマナスノサクコロ","sex":"牝","age":2,"jockey":"ルメール","trainer":"武英","odds":4.3,"plcLow":1.7,"plcHigh":2.4,"mkt":0.185,"mdl":0.218,"dv":0.165,"p3":47.9,"evLo":81.4,"evHi":114.9,"prevFin":0.17,"prevPop":2,"rest":65,"starts":1,"wtDiff":0,"leg":"先行","jkyWin":null,"classUp":0},{"rank":3,"mrank":3,"no":5,"gate":5,"name":"リアンフィニ","sex":"牝","age":2,"jockey":"川田","trainer":"野中","odds":4.8,"plcLow":1.4,"plcHigh":1.7,"mkt":0.165,"mdl":0.165,"dv":-0.001,"p3":44.7,"evLo":62.5,"evHi":75.9,"prevFin":0.12,"prevPop":1,"rest":43,"starts":1,"wtDiff":0,"leg":"逃げ・先行","jkyWin":23.8,"classUp":0},{"rank":4,"mrank":4,"no":9,"gate":8,"name":"ラガッタレアーレ","sex":"牝","age":2,"jockey":"北村友","trainer":"秋山","odds":5.8,"plcLow":1.7,"plcHigh":2.3,"mkt":0.137,"mdl":0.144,"dv":0.049,"p3":41.3,"evLo":70.2,"evHi":95.0,"prevFin":0.11,"prevPop":4,"rest":22,"starts":1,"wtDiff":0,"leg":"先行","jkyWin":11.0,"classUp":0},{"rank":5,"mrank":5,"no":8,"gate":7,"name":"パルフェクシオン","sex":"牝","age":2,"jockey":"田山","trainer":"大久保","odds":6.3,"plcLow":1.7,"plcHigh":2.3,"mkt":0.126,"mdl":0.128,"dv":0.018,"p3":40.7,"evLo":69.1,"evHi":93.5,"prevFin":0.36,"prevPop":1,"rest":23,"starts":1,"wtDiff":0,"leg":"差し","jkyWin":5.2,"classUp":0},{"rank":6,"mrank":6,"no":7,"gate":7,"name":"イテルム","sex":"牝","age":2,"jockey":"松山","trainer":"田中克","odds":10.6,"plcLow":2.1,"plcHigh":2.9,"mkt":0.075,"mdl":0.073,"dv":-0.025,"p3":28.9,"evLo":60.7,"evHi":83.8,"prevFin":0.09,"prevPop":9,"rest":72,"starts":1,"wtDiff":0,"leg":"先行","jkyWin":14.9,"classUp":0},{"rank":7,"mrank":7,"no":2,"gate":2,"name":"ジーティーハルカゼ","sex":"牝","age":2,"jockey":"西村淳","trainer":"辻野","odds":25.4,"plcLow":4.1,"plcHigh":5.9,"mkt":0.031,"mdl":0.035,"dv":0.107,"p3":12.4,"evLo":51.0,"evHi":73.4,"prevFin":0.45,"prevPop":6,"rest":23,"starts":1,"wtDiff":0,"leg":"先行","jkyWin":11.0,"classUp":0},{"rank":8,"mrank":9,"no":6,"gate":6,"name":"ルージュムーサ","sex":"牝","age":2,"jockey":"今村","trainer":"安田","odds":32.4,"plcLow":5.2,"plcHigh":7.5,"mkt":0.024,"mdl":0.013,"dv":-0.639,"p3":9.7,"evLo":50.7,"evHi":73.1,"prevFin":0.78,"prevPop":8,"rest":15,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":3.8,"classUp":0},{"rank":9,"mrank":8,"no":10,"gate":8,"name":"スターリーデー","sex":"牝","age":2,"jockey":"吉村","trainer":"茶木","odds":37.0,"plcLow":7.7,"plcHigh":11.1,"mkt":0.021,"mdl":0.026,"dv":0.198,"p3":9.1,"evLo":70.4,"evHi":101.5,"prevFin":0.58,"prevPop":3,"rest":36,"starts":2,"wtDiff":0,"leg":"差し","jkyWin":5.9,"classUp":0},{"rank":10,"mrank":10,"no":4,"gate":4,"name":"ドリームリボン","sex":"牝","age":2,"jockey":"和田陽","trainer":"谷","odds":95.1,"plcLow":12.5,"plcHigh":18.1,"mkt":0.008,"mdl":0.004,"dv":-0.746,"p3":3.6,"evLo":45.3,"evHi":65.6,"prevFin":0.73,"prevPop":8,"rest":23,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":5.0,"classUp":0}],"miss":["市場集中度が不足（m3=0.577、必要0.75）"],"options":[{"bet":"2番人気の単勝","roi":89.5,"n":861,"hit":null,"pick":"3番 ハマナスノサクコロ","odds":4.3},{"bet":"馬連(1-2番人気)","roi":83.7,"n":861,"hit":11.7,"pick":"1番 マリアンデール × 3番 ハマナスノサクコロ","odds":null},{"bet":"ワイド(1-3番人気)","roi":82.5,"n":861,"hit":20.8,"pick":"1番 マリアンデール × 5番 リアンフィニ","odds":null},{"bet":"1番人気の複勝","roi":82.4,"n":1027,"hit":58.3,"pick":"1番 マリアンデール","odds":3.5},{"bet":"2番人気の複勝","roi":82.3,"n":861,"hit":46.9,"pick":"3番 ハマナスノサクコロ","odds":4.3},{"bet":"3番人気の単勝","roi":81.8,"n":916,"hit":null,"pick":"5番 リアンフィニ","odds":4.8}],"m3":0.5767,"dv":0.1648,"p2no":3,"p2name":"ハマナスノサクコロ","p2odds":4.3,"oddsTime":"2026-09-21 07:31:05","oddsAge":184,"plc":[[1.7,2.4]],"ok":false},{"r":3,"name":"２歳未勝利","cls":"未勝利","value":[],"modelPick":{"no":9,"name":"カツダルマ","mktRank":1,"odds":2.5,"agree":true},"nMoved":4,"shape":"上位拮抗","shapeDesc":"上位は固まっているが抜けた存在がいない","dom12":2.36,"n":13,"post":"11:05","top5":[{"rank":1,"no":9,"name":"カツダルマ","odds":2.5,"mkt":0.319,"mdl":0.328,"dv":0.027},{"rank":2,"no":6,"name":"ノヴァーリス","odds":5.9,"mkt":0.135,"mdl":0.155,"dv":0.137},{"rank":3,"no":4,"name":"エルダークローネ","odds":7.0,"mkt":0.114,"mdl":0.094,"dv":-0.188},{"rank":4,"no":3,"name":"コジアン","odds":8.6,"mkt":0.093,"mdl":0.089,"dv":-0.045},{"rank":5,"no":5,"name":"ケンシロウワールド","odds":10.8,"mkt":0.074,"mdl":0.066,"dv":-0.116}],"horses":[{"rank":1,"mrank":1,"no":9,"gate":6,"name":"カツダルマ","sex":"牡","age":2,"jockey":"幸","trainer":"秋山","odds":2.5,"plcLow":1.2,"plcHigh":1.3,"mkt":0.319,"mdl":0.328,"dv":0.027,"p3":64.1,"evLo":77.0,"evHi":83.4,"prevFin":0.22,"prevPop":1,"rest":36,"starts":2,"wtDiff":0,"leg":"差し","jkyWin":6.0,"classUp":0},{"rank":2,"mrank":2,"no":6,"gate":5,"name":"ノヴァーリス","sex":"牝","age":2,"jockey":"岩田望","trainer":"安田","odds":5.9,"plcLow":2.0,"plcHigh":3.1,"mkt":0.135,"mdl":0.155,"dv":0.137,"p3":36.9,"evLo":73.9,"evHi":114.5,"prevFin":0.42,"prevPop":6,"rest":51,"starts":1,"wtDiff":0,"leg":"逃げ・先行","jkyWin":14.4,"classUp":0},{"rank":3,"mrank":3,"no":4,"gate":4,"name":"エルダークローネ","sex":"牡","age":2,"jockey":"田山","trainer":"西村","odds":7.0,"plcLow":1.7,"plcHigh":2.5,"mkt":0.114,"mdl":0.094,"dv":-0.188,"p3":33.3,"evLo":56.7,"evHi":83.3,"prevFin":0.38,"prevPop":1,"rest":58,"starts":2,"wtDiff":0,"leg":"差し","jkyWin":5.2,"classUp":0},{"rank":4,"mrank":4,"no":3,"gate":3,"name":"コジアン","sex":"牡","age":2,"jockey":"吉村","trainer":"小椋","odds":8.6,"plcLow":2.2,"plcHigh":3.4,"mkt":0.093,"mdl":0.089,"dv":-0.045,"p3":30.7,"evLo":67.5,"evHi":104.4,"prevFin":0.22,"prevPop":5,"rest":22,"starts":2,"wtDiff":0,"leg":"逃げ・先行","jkyWin":5.9,"classUp":0},{"rank":5,"mrank":6,"no":5,"gate":4,"name":"ケンシロウワールド","sex":"牡","age":2,"jockey":"和田陽","trainer":"森秀","odds":10.8,"plcLow":2.6,"plcHigh":4.0,"mkt":0.074,"mdl":0.066,"dv":-0.116,"p3":25.8,"evLo":67.2,"evHi":103.4,"prevFin":0.89,"prevPop":3,"rest":64,"starts":2,"wtDiff":0,"leg":"差し","jkyWin":5.0,"classUp":0},{"rank":6,"mrank":5,"no":13,"gate":8,"name":"ココモフィーバー","sex":"牝","age":2,"jockey":"池添","trainer":"池添","odds":12.6,"plcLow":2.9,"plcHigh":4.5,"mkt":0.063,"mdl":0.075,"dv":0.166,"p3":25.0,"evLo":72.4,"evHi":112.3,"prevFin":0.25,"prevPop":3,"rest":79,"starts":1,"wtDiff":0,"leg":"先行","jkyWin":8.9,"classUp":0},{"rank":7,"mrank":7,"no":1,"gate":1,"name":"アトランタ","sex":"牡","age":2,"jockey":"松山","trainer":"高柳大","odds":17.0,"plcLow":3.4,"plcHigh":5.4,"mkt":0.047,"mdl":0.052,"dv":0.095,"p3":18.5,"evLo":62.8,"evHi":99.7,"prevFin":0.62,"prevPop":2,"rest":71,"starts":1,"wtDiff":0,"leg":"先行","jkyWin":14.9,"classUp":0},{"rank":8,"mrank":8,"no":12,"gate":8,"name":"ミライノシャチョウ","sex":"牝","age":2,"jockey":"松本","trainer":"森秀","odds":20.9,"plcLow":4.0,"plcHigh":6.5,"mkt":0.038,"mdl":0.042,"dv":0.099,"p3":15.7,"evLo":62.8,"evHi":102.0,"prevFin":0.62,"prevPop":5,"rest":37,"starts":2,"wtDiff":0,"leg":"先行","jkyWin":4.8,"classUp":0},{"rank":9,"mrank":11,"no":7,"gate":5,"name":"カフジポポー","sex":"牡","age":2,"jockey":"松若","trainer":"森田","odds":24.5,"plcLow":4.5,"plcHigh":7.2,"mkt":0.033,"mdl":0.021,"dv":-0.45,"p3":13.8,"evLo":62.2,"evHi":99.5,"prevFin":1.0,"prevPop":8,"rest":22,"starts":1,"wtDiff":0,"leg":"逃げ・先行","jkyWin":5.4,"classUp":0},{"rank":10,"mrank":12,"no":2,"gate":2,"name":"メイショウレイナ","sex":"牝","age":2,"jockey":"永島","trainer":"池添","odds":31.7,"plcLow":5.5,"plcHigh":8.9,"mkt":0.025,"mdl":0.017,"dv":-0.42,"p3":9.9,"evLo":54.4,"evHi":88.0,"prevFin":0.91,"prevPop":10,"rest":16,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":2.1,"classUp":0},{"rank":11,"mrank":9,"no":11,"gate":7,"name":"コメットサン","sex":"牝","age":2,"jockey":"鮫島駿","trainer":"西園翔","odds":33.1,"plcLow":5.4,"plcHigh":8.7,"mkt":0.024,"mdl":0.025,"dv":0.02,"p3":10.1,"evLo":54.4,"evHi":87.7,"prevFin":0.76,"prevPop":4,"rest":23,"starts":1,"wtDiff":0,"leg":"逃げ・先行","jkyWin":9.9,"classUp":0},{"rank":12,"mrank":10,"no":8,"gate":6,"name":"キャンドル","sex":"牝","age":2,"jockey":"横山琉","trainer":"清水久","odds":38.9,"plcLow":4.9,"plcHigh":7.9,"mkt":0.02,"mdl":0.022,"dv":0.077,"p3":8.5,"evLo":41.8,"evHi":67.4,"prevFin":0.31,"prevPop":10,"rest":22,"starts":2,"wtDiff":0,"leg":"逃げ・先行","jkyWin":4.3,"classUp":0},{"rank":13,"mrank":13,"no":10,"gate":7,"name":"メイショウスパーク","sex":"牡","age":2,"jockey":"太宰","trainer":"飯田","odds":53.4,"plcLow":8.0,"plcHigh":12.9,"mkt":0.015,"mdl":0.016,"dv":0.081,"p3":6.5,"evLo":52.3,"evHi":84.3,"prevFin":0.67,"prevPop":10,"rest":22,"starts":1,"wtDiff":0,"leg":"逃げ・先行","jkyWin":3.6,"classUp":0}],"miss":["市場集中度が不足（m3=0.568、必要0.75）"],"options":[{"bet":"6番人気の単勝","roi":98.3,"n":973,"hit":null,"pick":"13番 ココモフィーバー","odds":12.6},{"bet":"2番人気の単勝","roi":89.5,"n":861,"hit":null,"pick":"6番 ノヴァーリス","odds":5.9},{"bet":"1番人気の複勝","roi":86.7,"n":792,"hit":60.2,"pick":"9番 カツダルマ","odds":2.5},{"bet":"馬連(1-2番人気)","roi":83.7,"n":861,"hit":11.7,"pick":"9番 カツダルマ × 6番 ノヴァーリス","odds":null},{"bet":"1番人気の単勝","roi":83.0,"n":792,"hit":null,"pick":"9番 カツダルマ","odds":2.5},{"bet":"ワイド(1-3番人気)","roi":82.5,"n":861,"hit":20.8,"pick":"9番 カツダルマ × 4番 エルダークローネ","odds":null}],"m3":0.5679,"dv":0.1366,"p2no":6,"p2name":"ノヴァーリス","p2odds":5.9,"oddsTime":"2026-09-21 07:01:00","oddsAge":244,"plc":[[2.0,3.1]],"ok":false},{"r":4,"name":"２歳新馬","cls":"新馬","value":[],"modelPick":{"no":1,"name":"エイントノーウェイ","mktRank":1,"odds":4.9,"agree":true},"nMoved":0,"shape":"混戦","shapeDesc":"票が割れていて、市場自体が結論を出せていない","dom12":1.02,"n":15,"post":"11:35","top5":[{"rank":1,"no":1,"name":"エイントノーウェイ","odds":4.9,"mkt":0.162,"mdl":0.169,"dv":0.042},{"rank":2,"no":3,"name":"スウィートライト","odds":5.0,"mkt":0.159,"mdl":0.153,"dv":-0.039},{"rank":3,"no":15,"name":"ワンスフォーユー","odds":5.6,"mkt":0.142,"mdl":0.149,"dv":0.052},{"rank":4,"no":11,"name":"ジョイザモーメント","odds":6.9,"mkt":0.115,"mdl":0.113,"dv":-0.018},{"rank":5,"no":12,"name":"サノノマリーナ","odds":9.0,"mkt":0.088,"mdl":0.081,"dv":-0.081}],"horses":[{"rank":1,"mrank":1,"no":1,"gate":1,"name":"エイントノーウェイ","sex":"牝","age":2,"jockey":"川田","trainer":"須貝","odds":4.9,"plcLow":1.7,"plcHigh":2.1,"mkt":0.162,"mdl":0.169,"dv":0.042,"p3":39.8,"evLo":67.7,"evHi":83.7,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":23.8,"classUp":null},{"rank":2,"mrank":2,"no":3,"gate":2,"name":"スウィートライト","sex":"牝","age":2,"jockey":"松山","trainer":"橋口","odds":5.0,"plcLow":2.0,"plcHigh":2.5,"mkt":0.159,"mdl":0.153,"dv":-0.039,"p3":39.9,"evLo":79.7,"evHi":99.7,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":14.9,"classUp":null},{"rank":3,"mrank":3,"no":15,"gate":8,"name":"ワンスフォーユー","sex":"牝","age":2,"jockey":"田山","trainer":"高橋亮","odds":5.6,"plcLow":2.0,"plcHigh":2.6,"mkt":0.142,"mdl":0.149,"dv":0.052,"p3":36.7,"evLo":73.4,"evHi":95.4,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":5.2,"classUp":null},{"rank":4,"mrank":4,"no":11,"gate":6,"name":"ジョイザモーメント","sex":"牝","age":2,"jockey":"岩田望","trainer":"橋田","odds":6.9,"plcLow":2.5,"plcHigh":3.2,"mkt":0.115,"mdl":0.113,"dv":-0.018,"p3":34.0,"evLo":84.9,"evHi":108.7,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":14.4,"classUp":null},{"rank":5,"mrank":5,"no":12,"gate":7,"name":"サノノマリーナ","sex":"牝","age":2,"jockey":"坂井","trainer":"前川","odds":9.0,"plcLow":2.1,"plcHigh":2.7,"mkt":0.088,"mdl":0.081,"dv":-0.081,"p3":28.3,"evLo":59.5,"evHi":76.5,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":16.4,"classUp":null},{"rank":6,"mrank":6,"no":10,"gate":6,"name":"リケアワルツ","sex":"牝","age":2,"jockey":"吉村","trainer":"宮本","odds":12.4,"plcLow":3.2,"plcHigh":4.1,"mkt":0.064,"mdl":0.068,"dv":0.054,"p3":23.5,"evLo":75.2,"evHi":96.3,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":5.9,"classUp":null},{"rank":7,"mrank":7,"no":13,"gate":7,"name":"パクスフェリーチェ","sex":"牝","age":2,"jockey":"西村淳","trainer":"角田","odds":17.7,"plcLow":3.7,"plcHigh":4.8,"mkt":0.045,"mdl":0.046,"dv":0.036,"p3":16.6,"evLo":61.4,"evHi":79.6,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":11.0,"classUp":null},{"rank":8,"mrank":8,"no":6,"gate":4,"name":"キミチャン","sex":"牝","age":2,"jockey":"鮫島駿","trainer":"加藤公","odds":19.2,"plcLow":5.0,"plcHigh":6.5,"mkt":0.041,"mdl":0.038,"dv":-0.096,"p3":15.8,"evLo":79.0,"evHi":102.7,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":9.9,"classUp":null},{"rank":9,"mrank":9,"no":4,"gate":3,"name":"ジェルメーヌ","sex":"牝","age":2,"jockey":"田口","trainer":"中尾","odds":21.7,"plcLow":5.1,"plcHigh":6.7,"mkt":0.037,"mdl":0.036,"dv":-0.012,"p3":13.6,"evLo":69.3,"evHi":91.0,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":5.1,"classUp":null},{"rank":10,"mrank":10,"no":7,"gate":4,"name":"テーオーローズ","sex":"牝","age":2,"jockey":"菱田","trainer":"岡田","odds":22.2,"plcLow":5.9,"plcHigh":7.8,"mkt":0.036,"mdl":0.035,"dv":-0.014,"p3":13.5,"evLo":79.9,"evHi":105.6,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":5.3,"classUp":null},{"rank":11,"mrank":11,"no":5,"gate":3,"name":"レジェンディーヴァ","sex":"牝","age":2,"jockey":"長岡","trainer":"高橋亮","odds":25.4,"plcLow":5.1,"plcHigh":6.8,"mkt":0.031,"mdl":0.031,"dv":-0.007,"p3":11.4,"evLo":58.2,"evHi":77.6,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":3.4,"classUp":null},{"rank":12,"mrank":12,"no":2,"gate":2,"name":"ワインオクロック","sex":"牝","age":2,"jockey":"北村友","trainer":"柴田","odds":27.8,"plcLow":6.7,"plcHigh":8.9,"mkt":0.029,"mdl":0.03,"dv":0.039,"p3":10.7,"evLo":71.5,"evHi":94.9,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":11.0,"classUp":null},{"rank":13,"mrank":13,"no":9,"gate":5,"name":"ナイスウーマン","sex":"牝","age":2,"jockey":"和田陽","trainer":"鈴木孝","odds":34.4,"plcLow":8.2,"plcHigh":11.0,"mkt":0.023,"mdl":0.024,"dv":0.022,"p3":8.7,"evLo":71.6,"evHi":96.1,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":5.0,"classUp":null},{"rank":14,"mrank":14,"no":14,"gate":8,"name":"アプリコットスカイ","sex":"牝","age":2,"jockey":"幸","trainer":"大根田","odds":41.8,"plcLow":8.5,"plcHigh":11.4,"mkt":0.019,"mdl":0.018,"dv":-0.056,"p3":7.6,"evLo":64.2,"evHi":86.2,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":6.0,"classUp":null},{"rank":15,"mrank":15,"no":8,"gate":5,"name":"マヒナピハ","sex":"牝","age":2,"jockey":"小沢","trainer":"緒方","odds":81.7,"plcLow":18.6,"plcHigh":24.6,"mkt":0.01,"mdl":0.009,"dv":-0.036,"p3":3.7,"evLo":69.1,"evHi":91.3,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":4.7,"classUp":null}],"miss":["市場集中度が不足（m3=0.463、必要0.75）","2番人気の乖離が負（-0.039）＝モデルは市場より低く見ている"],"options":[{"bet":"4番人気の単勝","roi":85.3,"n":414,"hit":null,"pick":"11番 ジョイザモーメント","odds":6.9},{"bet":"6番人気の複勝","roi":85.0,"n":425,"hit":25.2,"pick":"10番 リケアワルツ","odds":12.4},{"bet":"3番人気の単勝","roi":84.7,"n":398,"hit":null,"pick":"15番 ワンスフォーユー","odds":5.6},{"bet":"4番人気の複勝","roi":84.4,"n":414,"hit":35.5,"pick":"11番 ジョイザモーメント","odds":6.9},{"bet":"3番人気の複勝","roi":80.5,"n":398,"hit":35.9,"pick":"15番 ワンスフォーユー","odds":5.6},{"bet":"6番人気の単勝","roi":79.2,"n":425,"hit":null,"pick":"10番 リケアワルツ","odds":12.4}],"m3":0.4626,"dv":-0.039,"p2no":3,"p2name":"スウィートライト","p2odds":5.0,"oddsTime":"2026-09-21 07:30:00","oddsAge":245,"plc":[[2.0,2.5]],"ok":false},{"r":5,"name":"２歳新馬","cls":"新馬","value":[],"modelPick":{"no":6,"name":"シホノノービレ","mktRank":1,"odds":2.3,"agree":true},"nMoved":0,"shape":"2〜3強","shapeDesc":"上位数頭に絞られているが、その中の序列は決まっていない","dom12":1.3,"n":10,"post":"12:25","top5":[{"rank":1,"no":6,"name":"シホノノービレ","odds":2.3,"mkt":0.344,"mdl":0.339,"dv":-0.016},{"rank":2,"no":7,"name":"キングリア","odds":3.0,"mkt":0.264,"mdl":0.249,"dv":-0.057},{"rank":3,"no":10,"name":"ハナナ","odds":6.8,"mkt":0.116,"mdl":0.12,"dv":0.034},{"rank":4,"no":3,"name":"ニューイントリーグ","odds":8.8,"mkt":0.09,"mdl":0.099,"dv":0.097},{"rank":5,"no":4,"name":"アヴァロン","odds":13.3,"mkt":0.06,"mdl":0.067,"dv":0.12}],"horses":[{"rank":1,"mrank":1,"no":6,"gate":6,"name":"シホノノービレ","sex":"牡","age":2,"jockey":"岩田望","trainer":"佐藤悠","odds":2.3,"plcLow":1.2,"plcHigh":1.5,"mkt":0.344,"mdl":0.339,"dv":-0.016,"p3":70.7,"evLo":84.8,"evHi":106.0,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":14.4,"classUp":null},{"rank":2,"mrank":2,"no":7,"gate":7,"name":"キングリア","sex":"牡","age":2,"jockey":"川田","trainer":"中内田","odds":3.0,"plcLow":1.3,"plcHigh":1.7,"mkt":0.264,"mdl":0.249,"dv":-0.057,"p3":64.8,"evLo":84.2,"evHi":110.1,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":23.8,"classUp":null},{"rank":3,"mrank":3,"no":10,"gate":8,"name":"ハナナ","sex":"牝","age":2,"jockey":"坂井","trainer":"矢作","odds":6.8,"plcLow":1.5,"plcHigh":2.2,"mkt":0.116,"mdl":0.12,"dv":0.034,"p3":38.1,"evLo":57.1,"evHi":83.8,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":16.4,"classUp":null},{"rank":4,"mrank":4,"no":3,"gate":3,"name":"ニューイントリーグ","sex":"牡","age":2,"jockey":"ルメール","trainer":"吉岡","odds":8.8,"plcLow":2.0,"plcHigh":3.2,"mkt":0.09,"mdl":0.099,"dv":0.097,"p3":32.7,"evLo":65.4,"evHi":104.6,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":null,"classUp":null},{"rank":5,"mrank":5,"no":4,"gate":4,"name":"アヴァロン","sex":"牡","age":2,"jockey":"吉村","trainer":"清水久","odds":13.3,"plcLow":2.3,"plcHigh":3.6,"mkt":0.06,"mdl":0.067,"dv":0.12,"p3":23.7,"evLo":54.6,"evHi":85.4,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":5.9,"classUp":null},{"rank":6,"mrank":6,"no":9,"gate":8,"name":"キミアドーネ","sex":"牡","age":2,"jockey":"武豊","trainer":"吉村","odds":16.0,"plcLow":2.6,"plcHigh":4.1,"mkt":0.049,"mdl":0.05,"dv":0.001,"p3":22.2,"evLo":57.7,"evHi":91.0,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":14.0,"classUp":null},{"rank":7,"mrank":7,"no":8,"gate":7,"name":"フリーレイン","sex":"牝","age":2,"jockey":"西村淳","trainer":"角田","odds":23.1,"plcLow":2.6,"plcHigh":4.2,"mkt":0.034,"mdl":0.033,"dv":-0.025,"p3":15.7,"evLo":40.7,"evHi":65.8,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":11.0,"classUp":null},{"rank":8,"mrank":8,"no":1,"gate":1,"name":"ルジェドリール","sex":"牡","age":2,"jockey":"田口","trainer":"鈴木孝","odds":46.8,"plcLow":4.8,"plcHigh":7.9,"mkt":0.017,"mdl":0.018,"dv":0.064,"p3":7.5,"evLo":36.2,"evHi":59.6,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":5.1,"classUp":null},{"rank":9,"mrank":9,"no":5,"gate":5,"name":"セブンサークル","sex":"牡","age":2,"jockey":"藤懸","trainer":"畑端","odds":52.1,"plcLow":4.5,"plcHigh":7.4,"mkt":0.015,"mdl":0.015,"dv":-0.03,"p3":7.4,"evLo":33.3,"evHi":54.8,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":3.6,"classUp":null},{"rank":10,"mrank":10,"no":2,"gate":2,"name":"シンゼンジュウベエ","sex":"牡","age":2,"jockey":"富田","trainer":"飯田","odds":78.7,"plcLow":7.7,"plcHigh":12.7,"mkt":0.01,"mdl":0.009,"dv":-0.063,"p3":4.8,"evLo":36.9,"evHi":60.9,"prevFin":null,"prevPop":null,"rest":null,"starts":0,"wtDiff":0,"leg":null,"jkyWin":4.2,"classUp":null}],"miss":["市場集中度が不足（m3=0.725、必要0.75）","2番人気の乖離が負（-0.057）＝モデルは市場より低く見ている"],"options":[{"bet":"6番人気の単勝","roi":106.9,"n":1033,"hit":null,"pick":"9番 キミアドーネ","odds":16.0},{"bet":"馬連(1-2番人気)","roi":94.7,"n":1007,"hit":19.3,"pick":"6番 シホノノービレ × 7番 キングリア","odds":null},{"bet":"5番人気の単勝","roi":90.0,"n":1035,"hit":null,"pick":"4番 アヴァロン","odds":13.3},{"bet":"ワイド(1-2番人気)","roi":86.9,"n":1007,"hit":37.1,"pick":"6番 シホノノービレ × 7番 キングリア","odds":null},{"bet":"ワイド(2-3番人気)","roi":86.0,"n":1007,"hit":20.0,"pick":"7番 キングリア × 10番 ハナナ","odds":null},{"bet":"1番人気の複勝","roi":85.7,"n":997,"hit":69.7,"pick":"6番 シホノノービレ","odds":2.3}],"m3":0.7246,"dv":-0.0567,"p2no":7,"p2name":"キングリア","p2odds":3.0,"oddsTime":"2026-09-21 07:20:30","oddsAge":305,"plc":[[1.3,1.7]],"ok":false},{"r":6,"name":"３歳以上１勝クラス","cls":"1勝","value":[{"no":15,"name":"クラッチスラッガー","odds":12.8,"dv":0.241},{"no":10,"name":"ロットブラータ","odds":13.4,"dv":0.316},{"no":12,"name":"ディープサミット","odds":16.7,"dv":0.292}],"modelPick":{"no":11,"name":"メイショウジンライ","mktRank":1,"odds":3.6,"agree":true},"nMoved":5,"shape":"混戦","shapeDesc":"票が割れていて、市場自体が結論を出せていない","dom12":2.11,"n":15,"post":"12:55","top5":[{"rank":1,"no":11,"name":"メイショウジンライ","odds":3.6,"mkt":0.22,"mdl":0.2,"dv":-0.098},{"rank":2,"no":8,"name":"ルシタニア","odds":7.6,"mkt":0.104,"mdl":0.102,"dv":-0.025},{"rank":3,"no":6,"name":"エイユーファイヤー","odds":8.6,"mkt":0.092,"mdl":0.064,"dv":-0.37},{"rank":4,"no":13,"name":"カイラーサ","odds":9.9,"mkt":0.08,"mdl":0.087,"dv":0.081},{"rank":5,"no":4,"name":"ゴールドコット","odds":10.2,"mkt":0.078,"mdl":0.063,"dv":-0.217}],"horses":[{"rank":1,"mrank":1,"no":11,"gate":6,"name":"メイショウジンライ","sex":"牡","age":3,"jockey":"岩田望","trainer":"高橋亮","odds":3.6,"plcLow":1.7,"plcHigh":2.1,"mkt":0.22,"mdl":0.2,"dv":-0.098,"p3":48.8,"evLo":83.0,"evHi":102.5,"prevFin":0.0,"prevPop":1,"rest":100,"starts":5,"wtDiff":0,"leg":"逃げ・先行","jkyWin":14.4,"classUp":1},{"rank":2,"mrank":2,"no":8,"gate":5,"name":"ルシタニア","sex":"セ","age":4,"jockey":"今村","trainer":"武幸","odds":7.6,"plcLow":2.5,"plcHigh":3.3,"mkt":0.104,"mdl":0.102,"dv":-0.025,"p3":28.0,"evLo":70.1,"evHi":92.5,"prevFin":0.08,"prevPop":12,"rest":22,"starts":10,"wtDiff":0,"leg":"逃げ・先行","jkyWin":3.8,"classUp":0},{"rank":3,"mrank":7,"no":6,"gate":4,"name":"エイユーファイヤー","sex":"牡","age":4,"jockey":"松山","trainer":"森田","odds":8.6,"plcLow":1.7,"plcHigh":2.2,"mkt":0.092,"mdl":0.064,"dv":-0.37,"p3":25.2,"evLo":42.8,"evHi":55.4,"prevFin":0.4,"prevPop":11,"rest":15,"starts":18,"wtDiff":0,"leg":"追い込み","jkyWin":14.9,"classUp":0},{"rank":4,"mrank":3,"no":13,"gate":7,"name":"カイラーサ","sex":"セ","age":3,"jockey":"鮫島良","trainer":"河嶋","odds":9.9,"plcLow":2.0,"plcHigh":2.6,"mkt":0.08,"mdl":0.087,"dv":0.081,"p3":24.7,"evLo":49.4,"evHi":64.3,"prevFin":0.08,"prevPop":14,"rest":50,"starts":5,"wtDiff":0,"leg":"逃げ・先行","jkyWin":2.6,"classUp":0},{"rank":5,"mrank":9,"no":4,"gate":3,"name":"ゴールドコット","sex":"牡","age":3,"jockey":"角田和","trainer":"田中克","odds":10.2,"plcLow":2.8,"plcHigh":3.7,"mkt":0.078,"mdl":0.063,"dv":-0.217,"p3":25.2,"evLo":70.5,"evHi":93.2,"prevFin":0.0,"prevPop":7,"rest":128,"starts":3,"wtDiff":0,"leg":"追い込み","jkyWin":4.4,"classUp":1},{"rank":6,"mrank":6,"no":14,"gate":8,"name":"フィサブロス","sex":"牡","age":3,"jockey":"田山","trainer":"橋口","odds":11.7,"plcLow":3.5,"plcHigh":4.7,"mkt":0.068,"mdl":0.071,"dv":0.042,"p3":25.0,"evLo":87.3,"evHi":117.3,"prevFin":0.73,"prevPop":10,"rest":100,"starts":6,"wtDiff":0,"leg":"先行","jkyWin":5.2,"classUp":0},{"rank":7,"mrank":5,"no":15,"gate":8,"name":"クラッチスラッガー","sex":"牡","age":3,"jockey":"松若","trainer":"池添","odds":12.8,"plcLow":3.0,"plcHigh":4.1,"mkt":0.062,"mdl":0.079,"dv":0.241,"p3":22.5,"evLo":67.5,"evHi":92.3,"prevFin":1.0,"prevPop":3,"rest":30,"starts":5,"wtDiff":0,"leg":"差し","jkyWin":5.4,"classUp":0},{"rank":8,"mrank":4,"no":10,"gate":6,"name":"ロットブラータ","sex":"牡","age":4,"jockey":"幸","trainer":"平田","odds":13.4,"plcLow":4.0,"plcHigh":5.4,"mkt":0.059,"mdl":0.081,"dv":0.316,"p3":22.0,"evLo":88.0,"evHi":118.8,"prevFin":0.78,"prevPop":2,"rest":113,"starts":15,"wtDiff":0,"leg":"逃げ・先行","jkyWin":6.0,"classUp":0},{"rank":9,"mrank":10,"no":7,"gate":4,"name":"クイノールト","sex":"牡","age":3,"jockey":"鮫島駿","trainer":"橋口","odds":15.2,"plcLow":4.8,"plcHigh":6.5,"mkt":0.052,"mdl":0.052,"dv":-0.002,"p3":19.0,"evLo":91.3,"evHi":123.6,"prevFin":0.8,"prevPop":9,"rest":85,"starts":4,"wtDiff":0,"leg":"先行","jkyWin":9.9,"classUp":0},{"rank":10,"mrank":11,"no":5,"gate":3,"name":"ジーティーアメリカ","sex":"牡","age":4,"jockey":"北村友","trainer":"吉岡","odds":16.0,"plcLow":5.3,"plcHigh":7.3,"mkt":0.05,"mdl":0.047,"dv":-0.052,"p3":18.3,"evLo":97.3,"evHi":134.0,"prevFin":0.87,"prevPop":10,"rest":93,"starts":14,"wtDiff":0,"leg":"先行","jkyWin":11.0,"classUp":0},{"rank":11,"mrank":8,"no":12,"gate":7,"name":"ディープサミット","sex":"牡","age":4,"jockey":"太宰","trainer":"四位","odds":16.7,"plcLow":5.0,"plcHigh":6.8,"mkt":0.047,"mdl":0.064,"dv":0.292,"p3":17.5,"evLo":87.4,"evHi":118.9,"prevFin":0.86,"prevPop":7,"rest":30,"starts":8,"wtDiff":0,"leg":"差し","jkyWin":3.6,"classUp":0},{"rank":12,"mrank":12,"no":3,"gate":2,"name":"ドメイン","sex":"牡","age":3,"jockey":"田口","trainer":"松下","odds":21.6,"plcLow":7.8,"plcHigh":10.7,"mkt":0.037,"mdl":0.038,"dv":0.027,"p3":13.7,"evLo":107.2,"evHi":147.1,"prevFin":0.67,"prevPop":10,"rest":15,"starts":8,"wtDiff":0,"leg":"先行","jkyWin":5.1,"classUp":0},{"rank":13,"mrank":13,"no":2,"gate":2,"name":"スコーピオンイメル","sex":"牡","age":4,"jockey":"高倉","trainer":"武英","odds":37.9,"plcLow":7.3,"plcHigh":10.0,"mkt":0.021,"mdl":0.022,"dv":0.044,"p3":8.0,"evLo":58.5,"evHi":80.1,"prevFin":0.83,"prevPop":9,"rest":22,"starts":17,"wtDiff":0,"leg":"追い込み","jkyWin":3.0,"classUp":0},{"rank":14,"mrank":15,"no":9,"gate":5,"name":"マジックブルー","sex":"牡","age":5,"jockey":"森田","trainer":"荒川","odds":52.9,"plcLow":8.5,"plcHigh":11.7,"mkt":0.015,"mdl":0.012,"dv":-0.241,"p3":6.1,"evLo":51.6,"evHi":71.0,"prevFin":0.75,"prevPop":11,"rest":22,"starts":12,"wtDiff":0,"leg":"差し","jkyWin":0.0,"classUp":0},{"rank":15,"mrank":14,"no":1,"gate":1,"name":"ビゾー","sex":"セ","age":4,"jockey":"亀田","trainer":"斉藤崇","odds":55.4,"plcLow":12.1,"plcHigh":16.6,"mkt":0.014,"mdl":0.02,"dv":0.358,"p3":5.3,"evLo":64.5,"evHi":88.5,"prevFin":0.87,"prevPop":15,"rest":93,"starts":4,"wtDiff":0,"leg":"先行","jkyWin":5.2,"classUp":0}],"miss":["市場集中度が不足（m3=0.417、必要0.75）","2番人気の乖離が負（-0.025）＝モデルは市場より低く見ている","対象外クラス（1勝）"],"options":[{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"15番 クラッチスラッガー","odds":12.8,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"},{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"10番 ロットブラータ","odds":13.4,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"},{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"12番 ディープサミット","odds":16.7,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"}],"m3":0.4169,"dv":-0.0247,"p2no":8,"p2name":"ルシタニア","p2odds":7.6,"oddsTime":"2026-09-21 07:50:50","oddsAge":305,"plc":[[2.5,3.3]],"ok":false},{"r":7,"name":"３歳以上１勝クラス","cls":"1勝","value":[{"no":5,"name":"ベルサンローラン","odds":10.6,"dv":0.319}],"modelPick":{"no":2,"name":"ダンデノン","mktRank":1,"odds":4.4,"agree":true},"nMoved":4,"shape":"混戦","shapeDesc":"票が割れていて、市場自体が結論を出せていない","dom12":1.11,"n":18,"post":"13:25","top5":[{"rank":1,"no":2,"name":"ダンデノン","odds":4.4,"mkt":0.18,"mdl":0.182,"dv":0.009},{"rank":2,"no":12,"name":"ケールハイム","odds":4.9,"mkt":0.162,"mdl":0.167,"dv":0.03},{"rank":3,"no":6,"name":"ヴァージル","odds":7.9,"mkt":0.1,"mdl":0.08,"dv":-0.223},{"rank":4,"no":17,"name":"メイクワンズデイ","odds":9.5,"mkt":0.083,"mdl":0.089,"dv":0.062},{"rank":5,"no":5,"name":"ベルサンローラン","odds":10.6,"mkt":0.075,"mdl":0.103,"dv":0.319}],"horses":[{"rank":1,"mrank":1,"no":2,"gate":1,"name":"ダンデノン","sex":"牝","age":3,"jockey":"北村友","trainer":"田中克","odds":4.4,"plcLow":1.8,"plcHigh":2.3,"mkt":0.18,"mdl":0.182,"dv":0.009,"p3":42.7,"evLo":76.9,"evHi":98.2,"prevFin":0.19,"prevPop":1,"rest":29,"starts":5,"wtDiff":0,"leg":"逃げ・先行","jkyWin":11.0,"classUp":0},{"rank":2,"mrank":2,"no":12,"gate":6,"name":"ケールハイム","sex":"牝","age":3,"jockey":"ルメール","trainer":"福永","odds":4.9,"plcLow":1.9,"plcHigh":2.5,"mkt":0.162,"mdl":0.167,"dv":0.03,"p3":40.4,"evLo":76.7,"evHi":100.9,"prevFin":0.14,"prevPop":2,"rest":58,"starts":5,"wtDiff":0,"leg":"差し","jkyWin":null,"classUp":0},{"rank":3,"mrank":5,"no":6,"gate":3,"name":"ヴァージル","sex":"牡","age":4,"jockey":"Ｍデムーロ","trainer":"小椋","odds":7.9,"plcLow":1.5,"plcHigh":1.9,"mkt":0.1,"mdl":0.08,"dv":-0.223,"p3":27.0,"evLo":40.6,"evHi":51.4,"prevFin":0.13,"prevPop":4,"rest":36,"starts":16,"wtDiff":0,"leg":"追い込み","jkyWin":0.0,"classUp":0},{"rank":4,"mrank":4,"no":17,"gate":8,"name":"メイクワンズデイ","sex":"牡","age":3,"jockey":"松若","trainer":"宮地","odds":9.5,"plcLow":2.4,"plcHigh":3.3,"mkt":0.083,"mdl":0.089,"dv":0.062,"p3":25.3,"evLo":60.7,"evHi":83.5,"prevFin":0.12,"prevPop":2,"rest":29,"starts":8,"wtDiff":0,"leg":"逃げ・先行","jkyWin":5.4,"classUp":0},{"rank":5,"mrank":3,"no":5,"gate":3,"name":"ベルサンローラン","sex":"牝","age":3,"jockey":"田山","trainer":"清水久","odds":10.6,"plcLow":2.8,"plcHigh":3.9,"mkt":0.075,"mdl":0.103,"dv":0.319,"p3":24.2,"evLo":67.8,"evHi":94.5,"prevFin":0.71,"prevPop":7,"rest":100,"starts":8,"wtDiff":0,"leg":"逃げ・先行","jkyWin":5.2,"classUp":0},{"rank":6,"mrank":7,"no":10,"gate":5,"name":"ペールノエル","sex":"セ","age":4,"jockey":"西村淳","trainer":"西村","odds":10.8,"plcLow":3.2,"plcHigh":4.6,"mkt":0.073,"mdl":0.063,"dv":-0.15,"p3":26.4,"evLo":84.3,"evHi":121.2,"prevFin":0.31,"prevPop":6,"rest":29,"starts":13,"wtDiff":0,"leg":"差し","jkyWin":11.0,"classUp":0},{"rank":7,"mrank":6,"no":11,"gate":6,"name":"ベルサ","sex":"牝","age":4,"jockey":"今村","trainer":"鈴木孝","odds":11.5,"plcLow":3.5,"plcHigh":4.9,"mkt":0.069,"mdl":0.077,"dv":0.114,"p3":24.7,"evLo":86.3,"evHi":120.8,"prevFin":0.06,"prevPop":8,"rest":29,"starts":15,"wtDiff":0,"leg":"逃げ・先行","jkyWin":3.8,"classUp":0},{"rank":8,"mrank":8,"no":3,"gate":2,"name":"ベルセクレト","sex":"牝","age":3,"jockey":"岩田望","trainer":"藤岡健","odds":16.3,"plcLow":5.5,"plcHigh":7.9,"mkt":0.049,"mdl":0.038,"dv":-0.256,"p3":18.3,"evLo":100.8,"evHi":144.8,"prevFin":0.0,"prevPop":4,"rest":57,"starts":3,"wtDiff":0,"leg":"先行","jkyWin":14.4,"classUp":1},{"rank":9,"mrank":10,"no":16,"gate":8,"name":"ムーンライトダイヤ","sex":"牝","age":3,"jockey":"秋山稔","trainer":"河嶋","odds":16.7,"plcLow":4.9,"plcHigh":7.0,"mkt":0.047,"mdl":0.031,"dv":-0.436,"p3":17.9,"evLo":87.8,"evHi":125.5,"prevFin":0.0,"prevPop":5,"rest":58,"starts":4,"wtDiff":0,"leg":"追い込み","jkyWin":3.0,"classUp":1},{"rank":10,"mrank":9,"no":4,"gate":2,"name":"リピ","sex":"牝","age":3,"jockey":"鮫島駿","trainer":"西園翔","odds":22.8,"plcLow":6.5,"plcHigh":9.4,"mkt":0.035,"mdl":0.036,"dv":0.042,"p3":13.3,"evLo":86.5,"evHi":125.1,"prevFin":0.25,"prevPop":10,"rest":29,"starts":8,"wtDiff":0,"leg":"先行","jkyWin":9.9,"classUp":0},{"rank":11,"mrank":15,"no":1,"gate":1,"name":"ルクスノア","sex":"牝","age":5,"jockey":"荻野琢","trainer":"平田","odds":30.6,"plcLow":7.3,"plcHigh":10.5,"mkt":0.026,"mdl":0.019,"dv":-0.303,"p3":9.7,"evLo":71.1,"evHi":102.2,"prevFin":0.56,"prevPop":11,"rest":29,"starts":9,"wtDiff":0,"leg":"追い込み","jkyWin":3.2,"classUp":0},{"rank":12,"mrank":13,"no":14,"gate":7,"name":"アイスヴィレッジ","sex":"牡","age":4,"jockey":"永島","trainer":"高橋康","odds":33.7,"plcLow":6.5,"plcHigh":9.4,"mkt":0.024,"mdl":0.023,"dv":-0.022,"p3":8.6,"evLo":55.9,"evHi":80.9,"prevFin":0.4,"prevPop":7,"rest":379,"starts":6,"wtDiff":0,"leg":"逃げ・先行","jkyWin":2.1,"classUp":1},{"rank":13,"mrank":12,"no":18,"gate":8,"name":"バーケンティン","sex":"牡","age":5,"jockey":"幸","trainer":"平田","odds":37.6,"plcLow":10.9,"plcHigh":15.9,"mkt":0.021,"mdl":0.025,"dv":0.163,"p3":7.5,"evLo":82.2,"evHi":119.9,"prevFin":0.5,"prevPop":16,"rest":29,"starts":14,"wtDiff":0,"leg":"差し","jkyWin":6.0,"classUp":0},{"rank":14,"mrank":11,"no":7,"gate":4,"name":"ブルーカミング","sex":"牡","age":4,"jockey":"河原田","trainer":"牧浦","odds":44.8,"plcLow":8.0,"plcHigh":11.6,"mkt":0.018,"mdl":0.025,"dv":0.366,"p3":6.7,"evLo":53.2,"evHi":77.2,"prevFin":0.73,"prevPop":16,"rest":85,"starts":12,"wtDiff":0,"leg":"差し","jkyWin":0.0,"classUp":0},{"rank":15,"mrank":14,"no":9,"gate":5,"name":"マダムカマラード","sex":"牝","age":3,"jockey":"長岡","trainer":"宮","odds":45.0,"plcLow":10.3,"plcHigh":15.0,"mkt":0.018,"mdl":0.021,"dv":0.182,"p3":6.5,"evLo":66.9,"evHi":97.5,"prevFin":0.87,"prevPop":5,"rest":23,"starts":3,"wtDiff":0,"leg":"逃げ・先行","jkyWin":3.4,"classUp":0},{"rank":16,"mrank":16,"no":8,"gate":4,"name":"シャインベック","sex":"セ","age":4,"jockey":"亀田","trainer":"北出","odds":86.2,"plcLow":17.3,"plcHigh":25.3,"mkt":0.009,"mdl":0.01,"dv":0.071,"p3":3.6,"evLo":62.7,"evHi":91.7,"prevFin":0.5,"prevPop":12,"rest":71,"starts":10,"wtDiff":0,"leg":"追い込み","jkyWin":5.2,"classUp":0},{"rank":17,"mrank":17,"no":15,"gate":7,"name":"オーケーダイナ","sex":"牝","age":4,"jockey":"小沢","trainer":"奥村豊","odds":126.4,"plcLow":21.1,"plcHigh":30.8,"mkt":0.006,"mdl":0.008,"dv":0.265,"p3":2.4,"evLo":50.8,"evHi":74.2,"prevFin":0.77,"prevPop":10,"rest":29,"starts":15,"wtDiff":0,"leg":"差し","jkyWin":4.7,"classUp":0},{"rank":18,"mrank":18,"no":13,"gate":7,"name":"ルディシャ","sex":"牡","age":4,"jockey":"森田","trainer":"森田","odds":147.3,"plcLow":41.9,"plcHigh":61.1,"mkt":0.005,"mdl":0.003,"dv":-0.527,"p3":1.9,"evLo":80.7,"evHi":117.6,"prevFin":0.89,"prevPop":10,"rest":85,"starts":8,"wtDiff":0,"leg":"追い込み","jkyWin":0.0,"classUp":0}],"miss":["市場集中度が不足（m3=0.442、必要0.75）","対象外クラス（1勝）"],"options":[{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"5番 ベルサンローラン","odds":10.6,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"}],"m3":0.4421,"dv":0.0305,"p2no":12,"p2name":"ケールハイム","p2odds":4.9,"oddsTime":"2026-09-21 07:20:45","oddsAge":365,"plc":[[1.9,2.5]],"ok":false},{"r":8,"name":"３歳以上１勝クラス","cls":"1勝","value":[{"no":12,"name":"リリーサンダー","odds":28.2,"dv":0.242}],"modelPick":{"no":3,"name":"ロードアルディート","mktRank":3,"odds":4.1,"agree":false},"nMoved":1,"shape":"上位拮抗","shapeDesc":"上位は固まっているが抜けた存在がいない","dom12":1.08,"n":12,"post":"13:55","top5":[{"rank":1,"no":6,"name":"ディニテ","odds":3.7,"mkt":0.215,"mdl":0.214,"dv":-0.003},{"rank":2,"no":7,"name":"レッドフレーザー","odds":4.0,"mkt":0.199,"mdl":0.167,"dv":-0.174},{"rank":3,"no":3,"name":"ロードアルディート","odds":4.1,"mkt":0.194,"mdl":0.23,"dv":0.169},{"rank":4,"no":4,"name":"アメリカンバー","odds":8.9,"mkt":0.089,"mdl":0.077,"dv":-0.156},{"rank":5,"no":11,"name":"ラテライト","odds":11.1,"mkt":0.072,"mdl":0.069,"dv":-0.04}],"horses":[{"rank":1,"mrank":2,"no":6,"gate":5,"name":"ディニテ","sex":"牡","age":4,"jockey":"岩田望","trainer":"辻野","odds":3.7,"plcLow":2.9,"plcHigh":4.3,"mkt":0.215,"mdl":0.214,"dv":-0.003,"p3":50.6,"evLo":146.8,"evHi":217.6,"prevFin":0.47,"prevPop":12,"rest":100,"starts":16,"wtDiff":0,"leg":"追い込み","jkyWin":14.4,"classUp":0},{"rank":2,"mrank":3,"no":7,"gate":6,"name":"レッドフレーザー","sex":"牡","age":3,"jockey":"坂井","trainer":"矢作","odds":4.0,"plcLow":1.6,"plcHigh":2.1,"mkt":0.199,"mdl":0.167,"dv":-0.174,"p3":49.6,"evLo":79.3,"evHi":104.1,"prevFin":0.0,"prevPop":2,"rest":16,"starts":9,"wtDiff":0,"leg":"先行","jkyWin":16.4,"classUp":1},{"rank":3,"mrank":1,"no":3,"gate":3,"name":"ロードアルディート","sex":"牡","age":4,"jockey":"ルメール","trainer":"武幸","odds":4.1,"plcLow":1.3,"plcHigh":1.6,"mkt":0.194,"mdl":0.23,"dv":0.169,"p3":49.4,"evLo":64.2,"evHi":79.0,"prevFin":0.3,"prevPop":3,"rest":23,"starts":13,"wtDiff":0,"leg":"追い込み","jkyWin":null,"classUp":0},{"rank":4,"mrank":4,"no":4,"gate":4,"name":"アメリカンバー","sex":"牡","age":4,"jockey":"富田","trainer":"宮地","odds":8.9,"plcLow":1.9,"plcHigh":2.6,"mkt":0.089,"mdl":0.077,"dv":-0.156,"p3":29.0,"evLo":55.1,"evHi":75.3,"prevFin":0.0,"prevPop":1,"rest":371,"starts":8,"wtDiff":0,"leg":"逃げ・先行","jkyWin":4.2,"classUp":1},{"rank":5,"mrank":5,"no":11,"gate":8,"name":"ラテライト","sex":"牝","age":4,"jockey":"田口","trainer":"橋田","odds":11.1,"plcLow":2.1,"plcHigh":3.0,"mkt":0.072,"mdl":0.069,"dv":-0.04,"p3":25.0,"evLo":52.4,"evHi":74.9,"prevFin":0.38,"prevPop":5,"rest":23,"starts":21,"wtDiff":0,"leg":"追い込み","jkyWin":5.1,"classUp":0},{"rank":6,"mrank":6,"no":5,"gate":5,"name":"メイショウカスガイ","sex":"牡","age":4,"jockey":"角田和","trainer":"角田","odds":12.7,"plcLow":2.7,"plcHigh":4.0,"mkt":0.063,"mdl":0.068,"dv":0.088,"p3":24.1,"evLo":65.1,"evHi":96.4,"prevFin":0.8,"prevPop":10,"rest":78,"starts":8,"wtDiff":0,"leg":"差し","jkyWin":4.4,"classUp":0},{"rank":7,"mrank":7,"no":8,"gate":6,"name":"オーレアミスト","sex":"セ","age":4,"jockey":"幸","trainer":"井上","odds":18.6,"plcLow":3.5,"plcHigh":5.2,"mkt":0.043,"mdl":0.043,"dv":-0.002,"p3":16.4,"evLo":57.3,"evHi":85.1,"prevFin":0.5,"prevPop":8,"rest":22,"starts":14,"wtDiff":0,"leg":"追い込み","jkyWin":6.0,"classUp":0},{"rank":8,"mrank":8,"no":2,"gate":2,"name":"レーンアジリティ","sex":"牡","age":4,"jockey":"高倉","trainer":"中尾","odds":21.8,"plcLow":2.9,"plcHigh":4.3,"mkt":0.036,"mdl":0.04,"dv":0.093,"p3":15.2,"evLo":44.0,"evHi":65.3,"prevFin":0.47,"prevPop":14,"rest":15,"starts":18,"wtDiff":0,"leg":"追い込み","jkyWin":3.0,"classUp":0},{"rank":9,"mrank":10,"no":10,"gate":7,"name":"エアフォースワン","sex":"牡","age":7,"jockey":"菱田","trainer":"大根田","odds":22.6,"plcLow":3.4,"plcHigh":5.1,"mkt":0.035,"mdl":0.031,"dv":-0.115,"p3":14.2,"evLo":48.2,"evHi":72.4,"prevFin":0.33,"prevPop":6,"rest":30,"starts":10,"wtDiff":0,"leg":"追い込み","jkyWin":5.3,"classUp":0},{"rank":10,"mrank":9,"no":12,"gate":8,"name":"リリーサンダー","sex":"牡","age":3,"jockey":"小沢","trainer":"緒方","odds":28.2,"plcLow":5.1,"plcHigh":7.7,"mkt":0.028,"mdl":0.036,"dv":0.242,"p3":11.8,"evLo":60.1,"evHi":90.8,"prevFin":1.0,"prevPop":5,"rest":51,"starts":8,"wtDiff":0,"leg":"先行","jkyWin":4.7,"classUp":1},{"rank":11,"mrank":11,"no":1,"gate":1,"name":"キタノサワヤカ","sex":"牡","age":4,"jockey":"田山","trainer":"吉田","odds":47.6,"plcLow":7.5,"plcHigh":11.4,"mkt":0.017,"mdl":0.018,"dv":0.085,"p3":6.8,"evLo":51.4,"evHi":78.1,"prevFin":1.0,"prevPop":5,"rest":337,"starts":4,"wtDiff":0,"leg":"差し","jkyWin":5.2,"classUp":0},{"rank":12,"mrank":12,"no":9,"gate":7,"name":"クレスコドルフィン","sex":"牡","age":4,"jockey":"中井","trainer":"羽月","odds":90.5,"plcLow":11.8,"plcHigh":17.9,"mkt":0.009,"mdl":0.007,"dv":-0.289,"p3":3.5,"evLo":41.6,"evHi":63.2,"prevFin":0.78,"prevPop":10,"rest":30,"starts":15,"wtDiff":0,"leg":"追い込み","jkyWin":3.3,"classUp":0}],"miss":["市場集中度が不足（m3=0.608、必要0.75）","2番人気の乖離が負（-0.174）＝モデルは市場より低く見ている","対象外クラス（1勝）"],"options":[{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"12番 リリーサンダー","odds":28.2,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"},{"bet":"6番人気の単勝","roi":98.3,"n":973,"hit":null,"pick":"5番 メイショウカスガイ","odds":12.7},{"bet":"ワイド(2-3番人気)","roi":91.5,"n":958,"hit":16.8,"pick":"7番 レッドフレーザー × 3番 ロードアルディート","odds":null},{"bet":"1番人気の複勝","roi":82.4,"n":1027,"hit":58.3,"pick":"6番 ディニテ","odds":3.7},{"bet":"3番人気の単勝","roi":81.7,"n":903,"hit":null,"pick":"3番 ロードアルディート","odds":4.1},{"bet":"6番人気の複勝","roi":80.6,"n":973,"hit":23.1,"pick":"5番 メイショウカスガイ","odds":12.7}],"m3":0.608,"dv":-0.1737,"p2no":7,"p2name":"レッドフレーザー","p2odds":4.0,"oddsTime":"2026-09-21 07:51:05","oddsAge":364,"plc":[[1.6,2.1]],"ok":false},{"r":9,"name":"新涼特別(2勝クラス)","cls":"2勝","value":[{"no":6,"name":"コロナドブリッジ","odds":10.2,"dv":0.239}],"modelPick":{"no":3,"name":"ポートデラメール","mktRank":1,"odds":3.8,"agree":true},"nMoved":1,"shape":"混戦","shapeDesc":"票が割れていて、市場自体が結論を出せていない","dom12":1.18,"n":16,"post":"14:25","top5":[{"rank":1,"no":3,"name":"ポートデラメール","odds":3.8,"mkt":0.209,"mdl":0.23,"dv":0.094},{"rank":2,"no":12,"name":"ピカラ","odds":4.5,"mkt":0.177,"mdl":0.145,"dv":-0.194},{"rank":3,"no":14,"name":"ヤマニンバロネス","odds":7.5,"mkt":0.106,"mdl":0.125,"dv":0.164},{"rank":4,"no":16,"name":"ライトオブヌカタ","odds":9.3,"mkt":0.085,"mdl":0.079,"dv":-0.083},{"rank":5,"no":6,"name":"コロナドブリッジ","odds":10.2,"mkt":0.078,"mdl":0.099,"dv":0.239}],"horses":[{"rank":1,"mrank":1,"no":3,"gate":2,"name":"ポートデラメール","sex":"牝","age":4,"jockey":"ルメール","trainer":"斉藤崇","odds":3.8,"plcLow":1.3,"plcHigh":1.7,"mkt":0.209,"mdl":0.23,"dv":0.094,"p3":48.1,"evLo":62.5,"evHi":81.8,"prevFin":0.27,"prevPop":3,"rest":58,"starts":8,"wtDiff":0,"leg":"逃げ・先行","jkyWin":null,"classUp":0},{"rank":2,"mrank":2,"no":12,"gate":6,"name":"ピカラ","sex":"牝","age":3,"jockey":"戸崎圭","trainer":"坂口","odds":4.5,"plcLow":1.2,"plcHigh":1.5,"mkt":0.177,"mdl":0.145,"dv":-0.194,"p3":43.3,"evLo":52.0,"evHi":65.0,"prevFin":0.07,"prevPop":1,"rest":15,"starts":4,"wtDiff":0,"leg":"逃げ・先行","jkyWin":16.0,"classUp":0},{"rank":3,"mrank":3,"no":14,"gate":7,"name":"ヤマニンバロネス","sex":"牝","age":4,"jockey":"武豊","trainer":"千田","odds":7.5,"plcLow":2.4,"plcHigh":4.0,"mkt":0.106,"mdl":0.125,"dv":0.164,"p3":29.1,"evLo":69.9,"evHi":116.4,"prevFin":0.73,"prevPop":9,"rest":58,"starts":9,"wtDiff":0,"leg":"差し","jkyWin":14.0,"classUp":0},{"rank":4,"mrank":5,"no":16,"gate":8,"name":"ライトオブヌカタ","sex":"牡","age":3,"jockey":"岩田望","trainer":"上村","odds":9.3,"plcLow":4.1,"plcHigh":7.2,"mkt":0.085,"mdl":0.079,"dv":-0.083,"p3":26.7,"evLo":109.5,"evHi":192.4,"prevFin":0.47,"prevPop":13,"rest":92,"starts":5,"wtDiff":0,"leg":"先行","jkyWin":14.4,"classUp":0},{"rank":5,"mrank":4,"no":6,"gate":3,"name":"コロナドブリッジ","sex":"牡","age":3,"jockey":"西村淳","trainer":"庄野","odds":10.2,"plcLow":2.8,"plcHigh":4.8,"mkt":0.078,"mdl":0.099,"dv":0.239,"p3":25.8,"evLo":72.3,"evHi":123.9,"prevFin":0.93,"prevPop":12,"rest":85,"starts":7,"wtDiff":0,"leg":"逃げ・先行","jkyWin":11.0,"classUp":-3},{"rank":6,"mrank":6,"no":2,"gate":1,"name":"モズタチアガレ","sex":"牡","age":4,"jockey":"Ｍデムーロ","trainer":"中尾","odds":11.6,"plcLow":3.3,"plcHigh":5.7,"mkt":0.068,"mdl":0.068,"dv":-0.012,"p3":25.4,"evLo":83.9,"evHi":145.0,"prevFin":0.13,"prevPop":8,"rest":15,"starts":18,"wtDiff":0,"leg":"逃げ・先行","jkyWin":0.0,"classUp":0},{"rank":7,"mrank":7,"no":4,"gate":2,"name":"ダイシンリンク","sex":"牡","age":4,"jockey":"中井","trainer":"森秀","odds":11.9,"plcLow":3.1,"plcHigh":5.4,"mkt":0.067,"mdl":0.058,"dv":-0.133,"p3":24.4,"evLo":75.5,"evHi":131.5,"prevFin":0.2,"prevPop":6,"rest":15,"starts":21,"wtDiff":0,"leg":"追い込み","jkyWin":3.3,"classUp":0},{"rank":8,"mrank":8,"no":13,"gate":7,"name":"アンビシャスヨシノ","sex":"牡","age":4,"jockey":"角田和","trainer":"吉田","odds":15.0,"plcLow":3.0,"plcHigh":5.2,"mkt":0.053,"mdl":0.043,"dv":-0.198,"p3":19.6,"evLo":58.8,"evHi":101.8,"prevFin":0.4,"prevPop":4,"rest":36,"starts":9,"wtDiff":0,"leg":"差し","jkyWin":4.4,"classUp":0},{"rank":9,"mrank":9,"no":15,"gate":8,"name":"シーニックビュー","sex":"牡","age":5,"jockey":"吉田隼","trainer":"金成","odds":22.4,"plcLow":4.5,"plcHigh":7.8,"mkt":0.035,"mdl":0.042,"dv":0.173,"p3":13.9,"evLo":62.3,"evHi":108.1,"prevFin":0.64,"prevPop":11,"rest":50,"starts":11,"wtDiff":0,"leg":"先行","jkyWin":6.1,"classUp":0},{"rank":10,"mrank":10,"no":8,"gate":4,"name":"ワーズワース","sex":"牡","age":8,"jockey":"浜中","trainer":"高橋一","odds":23.2,"plcLow":3.7,"plcHigh":6.3,"mkt":0.034,"mdl":0.028,"dv":-0.202,"p3":13.3,"evLo":49.1,"evHi":83.5,"prevFin":0.4,"prevPop":14,"rest":92,"starts":20,"wtDiff":0,"leg":"差し","jkyWin":10.2,"classUp":0},{"rank":11,"mrank":11,"no":9,"gate":5,"name":"スターオブロンドン","sex":"牡","age":3,"jockey":"古川奈","trainer":"矢作","odds":30.6,"plcLow":5.5,"plcHigh":9.7,"mkt":0.026,"mdl":0.027,"dv":0.033,"p3":10.0,"evLo":55.1,"evHi":97.1,"prevFin":0.62,"prevPop":7,"rest":15,"starts":13,"wtDiff":0,"leg":"先行","jkyWin":5.1,"classUp":0},{"rank":12,"mrank":12,"no":11,"gate":6,"name":"オコタンペ","sex":"牡","age":5,"jockey":"富田","trainer":"須貝","odds":56.8,"plcLow":7.0,"plcHigh":12.5,"mkt":0.014,"mdl":0.014,"dv":-0.001,"p3":5.4,"evLo":38.0,"evHi":67.9,"prevFin":0.58,"prevPop":7,"rest":23,"starts":24,"wtDiff":0,"leg":"差し","jkyWin":4.2,"classUp":0},{"rank":13,"mrank":14,"no":10,"gate":5,"name":"ラピダリア","sex":"牝","age":5,"jockey":"池添","trainer":"吉田","odds":61.5,"plcLow":9.3,"plcHigh":16.7,"mkt":0.013,"mdl":0.011,"dv":-0.15,"p3":4.9,"evLo":45.3,"evHi":81.3,"prevFin":0.6,"prevPop":15,"rest":36,"starts":23,"wtDiff":0,"leg":"追い込み","jkyWin":8.9,"classUp":0},{"rank":14,"mrank":15,"no":7,"gate":4,"name":"プチプラージュ","sex":"牝","age":4,"jockey":"幸","trainer":"大根田","odds":63.6,"plcLow":10.6,"plcHigh":19.0,"mkt":0.012,"mdl":0.01,"dv":-0.231,"p3":5.0,"evLo":52.9,"evHi":94.7,"prevFin":0.9,"prevPop":11,"rest":135,"starts":6,"wtDiff":0,"leg":"追い込み","jkyWin":6.0,"classUp":0},{"rank":15,"mrank":16,"no":1,"gate":1,"name":"ロードオルデン","sex":"牡","age":7,"jockey":"吉村","trainer":"辻野","odds":66.0,"plcLow":6.7,"plcHigh":11.9,"mkt":0.012,"mdl":0.009,"dv":-0.277,"p3":4.8,"evLo":32.3,"evHi":57.4,"prevFin":0.87,"prevPop":11,"rest":106,"starts":13,"wtDiff":0,"leg":"差し","jkyWin":5.9,"classUp":0},{"rank":16,"mrank":13,"no":5,"gate":3,"name":"サンコンクエスト","sex":"牝","age":4,"jockey":"太宰","trainer":"渡辺","odds":79.6,"plcLow":8.9,"plcHigh":16.0,"mkt":0.01,"mdl":0.012,"dv":0.186,"p3":4.1,"evLo":36.6,"evHi":65.8,"prevFin":1.0,"prevPop":10,"rest":120,"starts":12,"wtDiff":0,"leg":"逃げ・先行","jkyWin":3.6,"classUp":0}],"miss":["市場集中度が不足（m3=0.491、必要0.75）","2番人気の乖離が負（-0.194）＝モデルは市場より低く見ている"],"options":[{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"6番 コロナドブリッジ","odds":10.2,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"},{"bet":"5番人気の単勝","roi":93.7,"n":445,"hit":null,"pick":"6番 コロナドブリッジ","odds":10.2},{"bet":"5番人気の複勝","roi":88.3,"n":445,"hit":31.7,"pick":"6番 コロナドブリッジ","odds":10.2},{"bet":"4番人気の単勝","roi":85.3,"n":414,"hit":null,"pick":"16番 ライトオブヌカタ","odds":9.3},{"bet":"3番人気の単勝","roi":84.7,"n":398,"hit":null,"pick":"14番 ヤマニンバロネス","odds":7.5},{"bet":"4番人気の複勝","roi":84.4,"n":414,"hit":35.5,"pick":"16番 ライトオブヌカタ","odds":9.3}],"m3":0.4915,"dv":-0.1938,"p2no":12,"p2name":"ピカラ","p2odds":4.5,"oddsTime":"2026-09-21 07:21:00","oddsAge":424,"plc":[[1.2,1.5]],"ok":false},{"r":10,"name":"Ｍキタサンブラック(3勝クラス)","cls":"3勝","value":[{"no":1,"name":"キタサンハナビラ","odds":10.0,"dv":0.236},{"no":9,"name":"ファームツエンティ","odds":17.5,"dv":0.201}],"modelPick":{"no":8,"name":"アルマデオロ","mktRank":1,"odds":4.3,"agree":true},"nMoved":0,"shape":"混戦","shapeDesc":"票が割れていて、市場自体が結論を出せていない","dom12":1.28,"n":16,"post":"15:05","top5":[{"rank":1,"no":8,"name":"アルマデオロ","odds":4.3,"mkt":0.185,"mdl":0.19,"dv":0.029},{"rank":2,"no":10,"name":"ナリタエスペランサ","odds":5.5,"mkt":0.144,"mdl":0.141,"dv":-0.022},{"rank":3,"no":3,"name":"レジェンドシップ","odds":7.1,"mkt":0.112,"mdl":0.097,"dv":-0.138},{"rank":4,"no":1,"name":"キタサンハナビラ","odds":10.0,"mkt":0.079,"mdl":0.1,"dv":0.236},{"rank":5,"no":15,"name":"ベトルス","odds":10.4,"mkt":0.076,"mdl":0.061,"dv":-0.231}],"horses":[{"rank":1,"mrank":1,"no":8,"gate":4,"name":"アルマデオロ","sex":"牡","age":4,"jockey":"武豊","trainer":"清水久","odds":4.3,"plcLow":1.8,"plcHigh":2.0,"mkt":0.185,"mdl":0.19,"dv":0.029,"p3":43.3,"evLo":77.9,"evHi":86.5,"prevFin":0.07,"prevPop":1,"rest":51,"starts":14,"wtDiff":0,"leg":"先行","jkyWin":14.0,"classUp":0},{"rank":2,"mrank":2,"no":10,"gate":5,"name":"ナリタエスペランサ","sex":"牡","age":3,"jockey":"川田","trainer":"福永","odds":5.5,"plcLow":2.2,"plcHigh":2.7,"mkt":0.144,"mdl":0.141,"dv":-0.022,"p3":36.5,"evLo":80.3,"evHi":98.5,"prevFin":0.0,"prevPop":1,"rest":85,"starts":6,"wtDiff":0,"leg":"逃げ・先行","jkyWin":23.8,"classUp":1},{"rank":3,"mrank":4,"no":3,"gate":2,"name":"レジェンドシップ","sex":"セ","age":6,"jockey":"浜中","trainer":"佐藤悠","odds":7.1,"plcLow":2.5,"plcHigh":3.2,"mkt":0.112,"mdl":0.097,"dv":-0.138,"p3":29.8,"evLo":74.4,"evHi":95.3,"prevFin":0.0,"prevPop":5,"rest":23,"starts":23,"wtDiff":0,"leg":"先行","jkyWin":10.2,"classUp":1},{"rank":4,"mrank":3,"no":1,"gate":1,"name":"キタサンハナビラ","sex":"牝","age":4,"jockey":"藤懸","trainer":"斉藤崇","odds":10.0,"plcLow":3.6,"plcHigh":4.6,"mkt":0.079,"mdl":0.1,"dv":0.236,"p3":24.4,"evLo":87.7,"evHi":112.1,"prevFin":0.33,"prevPop":2,"rest":176,"starts":11,"wtDiff":0,"leg":"逃げ・先行","jkyWin":3.6,"classUp":1},{"rank":5,"mrank":6,"no":15,"gate":8,"name":"ベトルス","sex":"セ","age":5,"jockey":"岩田望","trainer":"友道","odds":10.4,"plcLow":2.8,"plcHigh":3.6,"mkt":0.076,"mdl":0.061,"dv":-0.231,"p3":24.6,"evLo":68.8,"evHi":88.4,"prevFin":0.38,"prevPop":1,"rest":99,"starts":11,"wtDiff":0,"leg":"差し","jkyWin":14.4,"classUp":0},{"rank":6,"mrank":5,"no":4,"gate":2,"name":"ミスタージーティー","sex":"牡","age":5,"jockey":"坂井","trainer":"矢作","odds":11.7,"plcLow":4.1,"plcHigh":5.3,"mkt":0.068,"mdl":0.08,"dv":0.166,"p3":24.7,"evLo":101.4,"evHi":131.0,"prevFin":0.47,"prevPop":6,"rest":113,"starts":16,"wtDiff":0,"leg":"先行","jkyWin":16.4,"classUp":0},{"rank":7,"mrank":7,"no":11,"gate":6,"name":"ジョイボーイ","sex":"牡","age":4,"jockey":"松山","trainer":"四位","odds":12.3,"plcLow":3.3,"plcHigh":4.3,"mkt":0.065,"mdl":0.059,"dv":-0.096,"p3":23.0,"evLo":75.9,"evHi":98.9,"prevFin":0.23,"prevPop":6,"rest":99,"starts":7,"wtDiff":0,"leg":"追い込み","jkyWin":14.9,"classUp":0},{"rank":8,"mrank":8,"no":5,"gate":3,"name":"スパークリシャール","sex":"セ","age":5,"jockey":"ルメール","trainer":"小島","odds":12.7,"plcLow":2.7,"plcHigh":3.5,"mkt":0.063,"mdl":0.057,"dv":-0.088,"p3":22.5,"evLo":60.7,"evHi":78.7,"prevFin":0.08,"prevPop":12,"rest":30,"starts":18,"wtDiff":0,"leg":"追い込み","jkyWin":null,"classUp":0},{"rank":9,"mrank":10,"no":16,"gate":8,"name":"ロードガレリア","sex":"牡","age":4,"jockey":"吉村","trainer":"藤岡健","odds":17.2,"plcLow":3.9,"plcHigh":5.1,"mkt":0.046,"mdl":0.035,"dv":-0.29,"p3":17.5,"evLo":68.4,"evHi":89.4,"prevFin":0.0,"prevPop":3,"rest":92,"starts":16,"wtDiff":0,"leg":"追い込み","jkyWin":5.9,"classUp":1},{"rank":10,"mrank":9,"no":9,"gate":5,"name":"ファームツエンティ","sex":"セ","age":6,"jockey":"酒井","trainer":"北出","odds":17.5,"plcLow":4.0,"plcHigh":5.2,"mkt":0.045,"mdl":0.055,"dv":0.201,"p3":16.7,"evLo":66.9,"evHi":86.9,"prevFin":0.35,"prevPop":3,"rest":93,"starts":18,"wtDiff":0,"leg":"差し","jkyWin":4.7,"classUp":0},{"rank":11,"mrank":12,"no":2,"gate":1,"name":"テーオーダグラス","sex":"牡","age":5,"jockey":"鮫島駿","trainer":"須貝","odds":30.6,"plcLow":5.4,"plcHigh":7.0,"mkt":0.026,"mdl":0.025,"dv":-0.044,"p3":9.7,"evLo":52.4,"evHi":67.9,"prevFin":0.5,"prevPop":5,"rest":16,"starts":26,"wtDiff":0,"leg":"追い込み","jkyWin":9.9,"classUp":0},{"rank":12,"mrank":11,"no":7,"gate":4,"name":"チルカーノ","sex":"牝","age":5,"jockey":"北村友","trainer":"高野","odds":34.2,"plcLow":5.9,"plcHigh":7.7,"mkt":0.023,"mdl":0.025,"dv":0.074,"p3":8.9,"evLo":52.6,"evHi":68.7,"prevFin":0.85,"prevPop":10,"rest":30,"starts":16,"wtDiff":0,"leg":"追い込み","jkyWin":11.0,"classUp":0},{"rank":13,"mrank":14,"no":6,"gate":3,"name":"シンゼンカガ","sex":"牡","age":4,"jockey":"吉田隼","trainer":"荒川","odds":39.7,"plcLow":8.1,"plcHigh":10.6,"mkt":0.02,"mdl":0.02,"dv":0.01,"p3":7.5,"evLo":60.4,"evHi":79.1,"prevFin":0.67,"prevPop":6,"rest":16,"starts":17,"wtDiff":0,"leg":"差し","jkyWin":6.1,"classUp":0},{"rank":14,"mrank":13,"no":14,"gate":7,"name":"サトノクローク","sex":"牡","age":6,"jockey":"池添","trainer":"橋口","odds":40.5,"plcLow":9.3,"plcHigh":12.2,"mkt":0.02,"mdl":0.023,"dv":0.158,"p3":7.4,"evLo":69.1,"evHi":90.7,"prevFin":0.5,"prevPop":6,"rest":58,"starts":17,"wtDiff":0,"leg":"逃げ・先行","jkyWin":8.9,"classUp":0},{"rank":15,"mrank":15,"no":12,"gate":6,"name":"サークルオブジョイ","sex":"牡","age":5,"jockey":"西村淳","trainer":"池添","odds":50.3,"plcLow":7.7,"plcHigh":10.1,"mkt":0.016,"mdl":0.016,"dv":-0.005,"p3":6.2,"evLo":47.7,"evHi":62.5,"prevFin":0.29,"prevPop":4,"rest":93,"starts":10,"wtDiff":0,"leg":"先行","jkyWin":11.0,"classUp":0},{"rank":16,"mrank":16,"no":13,"gate":7,"name":"タイセイフェリーク","sex":"牝","age":6,"jockey":"松若","trainer":"青木","odds":63.6,"plcLow":11.7,"plcHigh":15.4,"mkt":0.012,"mdl":0.016,"dv":0.217,"p3":4.9,"evLo":57.2,"evHi":75.3,"prevFin":0.64,"prevPop":9,"rest":22,"starts":19,"wtDiff":0,"leg":"追い込み","jkyWin":5.4,"classUp":0}],"miss":["市場集中度が不足（m3=0.441、必要0.75）","2番人気の乖離が負（-0.022）＝モデルは市場より低く見ている"],"options":[{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"1番 キタサンハナビラ","odds":10.0,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"},{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"9番 ファームツエンティ","odds":17.5,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"}],"m3":0.4408,"dv":-0.0221,"p2no":10,"p2name":"ナリタエスペランサ","p2odds":5.5,"oddsTime":"2026-09-21 07:00:30","oddsAge":485,"plc":[[2.2,2.7]],"ok":false},{"r":11,"name":"神戸新聞杯(G2)","cls":"OP重賞","value":[],"modelPick":{"no":1,"name":"ロブチェン","mktRank":1,"odds":1.5,"agree":true},"nMoved":1,"shape":"1強","shapeDesc":"1番人気が抜けている。票が集中して2番人気以下の複勝が売れ残りやすい形","dom12":5.07,"n":11,"post":"15:45","top5":[{"rank":1,"no":1,"name":"ロブチェン","odds":1.5,"mkt":0.529,"mdl":0.556,"dv":0.05},{"rank":2,"no":9,"name":"グリーンエナジー","odds":7.6,"mkt":0.104,"mdl":0.083,"dv":-0.225},{"rank":3,"no":3,"name":"ゴーラッキー","odds":10.7,"mkt":0.074,"mdl":0.079,"dv":0.063},{"rank":4,"no":7,"name":"コンジェスタス","odds":12.5,"mkt":0.063,"mdl":0.067,"dv":0.053},{"rank":5,"no":4,"name":"アルトラムス","odds":13.2,"mkt":0.06,"mdl":0.056,"dv":-0.07}],"horses":[{"rank":1,"mrank":1,"no":1,"gate":1,"name":"ロブチェン","sex":"牡","age":3,"jockey":"松山","trainer":"杉山晴","odds":1.5,"plcLow":1.1,"plcHigh":1.1,"mkt":0.529,"mdl":0.556,"dv":0.05,"p3":80.9,"evLo":89.0,"evHi":89.0,"prevFin":0.0,"prevPop":1,"rest":113,"starts":4,"wtDiff":0,"leg":"先行","jkyWin":14.9,"classUp":-1},{"rank":2,"mrank":2,"no":9,"gate":7,"name":"グリーンエナジー","sex":"牡","age":3,"jockey":"戸崎圭","trainer":"上原佑","odds":7.6,"plcLow":2.0,"plcHigh":6.6,"mkt":0.104,"mdl":0.083,"dv":-0.225,"p3":39.0,"evLo":78.0,"evHi":257.5,"prevFin":0.88,"prevPop":10,"rest":113,"starts":5,"wtDiff":0,"leg":"追い込み","jkyWin":16.0,"classUp":-1},{"rank":3,"mrank":3,"no":3,"gate":3,"name":"ゴーラッキー","sex":"牡","age":3,"jockey":"ルメール","trainer":"黒岩","odds":10.7,"plcLow":1.9,"plcHigh":6.5,"mkt":0.074,"mdl":0.079,"dv":0.063,"p3":29.6,"evLo":56.3,"evHi":192.6,"prevFin":0.0,"prevPop":1,"rest":106,"starts":4,"wtDiff":0,"leg":"逃げ・先行","jkyWin":null,"classUp":4},{"rank":4,"mrank":4,"no":7,"gate":6,"name":"コンジェスタス","sex":"牡","age":3,"jockey":"西村淳","trainer":"高野","odds":12.5,"plcLow":2.0,"plcHigh":6.9,"mkt":0.063,"mdl":0.067,"dv":0.053,"p3":28.3,"evLo":56.6,"evHi":195.2,"prevFin":0.47,"prevPop":6,"rest":113,"starts":3,"wtDiff":0,"leg":"先行","jkyWin":11.0,"classUp":-1},{"rank":5,"mrank":5,"no":4,"gate":4,"name":"アルトラムス","sex":"牡","age":3,"jockey":"岩田望","trainer":"野中","odds":13.2,"plcLow":2.3,"plcHigh":8.0,"mkt":0.06,"mdl":0.056,"dv":-0.07,"p3":27.5,"evLo":63.3,"evHi":220.1,"prevFin":0.29,"prevPop":16,"rest":113,"starts":5,"wtDiff":0,"leg":"差し","jkyWin":14.4,"classUp":-1},{"rank":6,"mrank":6,"no":2,"gate":2,"name":"エイシンインアウト","sex":"牡","age":3,"jockey":"横山琉","trainer":"中尾","odds":13.6,"plcLow":2.1,"plcHigh":7.5,"mkt":0.058,"mdl":0.055,"dv":-0.054,"p3":29.6,"evLo":62.2,"evHi":222.3,"prevFin":0.0,"prevPop":3,"rest":29,"starts":6,"wtDiff":0,"leg":"差し","jkyWin":4.3,"classUp":5},{"rank":7,"mrank":9,"no":11,"gate":8,"name":"ショウナンハヤナミ","sex":"牡","age":3,"jockey":"池添","trainer":"渡辺","odds":25.2,"plcLow":4.1,"plcHigh":15.7,"mkt":0.031,"mdl":0.021,"dv":-0.418,"p3":16.8,"evLo":68.9,"evHi":263.9,"prevFin":0.0,"prevPop":2,"rest":240,"starts":1,"wtDiff":0,"leg":"追い込み","jkyWin":8.9,"classUp":2},{"rank":8,"mrank":7,"no":6,"gate":6,"name":"エムズビギン","sex":"牡","age":3,"jockey":"武豊","trainer":"友道","odds":27.8,"plcLow":3.6,"plcHigh":13.6,"mkt":0.029,"mdl":0.032,"dv":0.127,"p3":15.1,"evLo":54.2,"evHi":204.8,"prevFin":0.76,"prevPop":15,"rest":113,"starts":5,"wtDiff":0,"leg":"先行","jkyWin":14.0,"classUp":-1},{"rank":9,"mrank":8,"no":10,"gate":8,"name":"カフジエメンタール","sex":"牡","age":3,"jockey":"坂井","trainer":"矢作","odds":33.2,"plcLow":3.7,"plcHigh":13.9,"mkt":0.024,"mdl":0.022,"dv":-0.07,"p3":13.5,"evLo":50.0,"evHi":187.9,"prevFin":0.0,"prevPop":3,"rest":22,"starts":7,"wtDiff":0,"leg":"先行","jkyWin":16.4,"classUp":4},{"rank":10,"mrank":10,"no":5,"gate":5,"name":"カムアップローゼス","sex":"牡","age":3,"jockey":"北村友","trainer":"浜田","odds":50.3,"plcLow":5.8,"plcHigh":22.8,"mkt":0.016,"mdl":0.018,"dv":0.141,"p3":8.4,"evLo":48.8,"evHi":191.8,"prevFin":0.0,"prevPop":1,"rest":85,"starts":10,"wtDiff":0,"leg":"先行","jkyWin":11.0,"classUp":5},{"rank":11,"mrank":11,"no":8,"gate":7,"name":"シートゥサミット","sex":"牡","age":3,"jockey":"酒井","trainer":"吉岡","odds":75.7,"plcLow":6.9,"plcHigh":27.1,"mkt":0.01,"mdl":0.01,"dv":-0.097,"p3":5.6,"evLo":38.4,"evHi":150.8,"prevFin":0.07,"prevPop":4,"rest":93,"starts":8,"wtDiff":0,"leg":"追い込み","jkyWin":4.7,"classUp":5}],"miss":["市場集中度が不足（m3=0.708、必要0.75）","2番人気の乖離が負（-0.225）＝モデルは市場より低く見ている","対象外クラス（OP重賞）"],"options":[{"bet":"5番人気の単勝","roi":95.0,"n":861,"hit":null,"pick":"4番 アルトラムス","odds":13.2},{"bet":"馬連(1-2番人気)","roi":94.7,"n":1007,"hit":19.3,"pick":"1番 ロブチェン × 9番 グリーンエナジー","odds":null},{"bet":"ワイド(1-2番人気)","roi":86.9,"n":1007,"hit":37.1,"pick":"1番 ロブチェン × 9番 グリーンエナジー","odds":null},{"bet":"ワイド(2-3番人気)","roi":86.0,"n":1007,"hit":20.0,"pick":"9番 グリーンエナジー × 3番 ゴーラッキー","odds":null},{"bet":"6番人気の複勝","roi":85.5,"n":863,"hit":23.4,"pick":"2番 エイシンインアウト","odds":13.6},{"bet":"1番人気の複勝","roi":84.9,"n":899,"hit":69.2,"pick":"1番 ロブチェン","odds":1.5}],"m3":0.7078,"dv":-0.2248,"p2no":9,"p2name":"グリーンエナジー","p2odds":7.6,"oddsTime":"2026-09-21 07:40:30","oddsAge":485,"plc":[[2.0,6.6]],"ok":false},{"r":12,"name":"３歳以上１勝クラス","cls":"1勝","value":[{"no":1,"name":"シュネーグロッケン","odds":25.3,"dv":0.394}],"modelPick":{"no":9,"name":"エイシンティザー","mktRank":1,"odds":3.3,"agree":true},"nMoved":2,"shape":"混戦","shapeDesc":"票が割れていて、市場自体が結論を出せていない","dom12":1.97,"n":15,"post":"16:30","top5":[{"rank":1,"no":9,"name":"エイシンティザー","odds":3.3,"mkt":0.24,"mdl":0.222,"dv":-0.077},{"rank":2,"no":10,"name":"リン","odds":6.5,"mkt":0.122,"mdl":0.126,"dv":0.037},{"rank":3,"no":5,"name":"ホットシート","odds":6.6,"mkt":0.12,"mdl":0.112,"dv":-0.064},{"rank":4,"no":6,"name":"ジャカルタバオ","odds":7.8,"mkt":0.101,"mdl":0.073,"dv":-0.331},{"rank":5,"no":4,"name":"ゴーゴーパンチ","odds":8.3,"mkt":0.095,"mdl":0.111,"dv":0.148}],"horses":[{"rank":1,"mrank":1,"no":9,"gate":5,"name":"エイシンティザー","sex":"牡","age":3,"jockey":"岩田望","trainer":"吉村","odds":3.3,"plcLow":1.4,"plcHigh":1.6,"mkt":0.24,"mdl":0.222,"dv":-0.077,"p3":52.6,"evLo":73.6,"evHi":84.2,"prevFin":0.09,"prevPop":2,"rest":16,"starts":9,"wtDiff":0,"leg":"先行","jkyWin":14.4,"classUp":0},{"rank":2,"mrank":2,"no":10,"gate":6,"name":"リン","sex":"牡","age":3,"jockey":"松山","trainer":"四位","odds":6.5,"plcLow":2.2,"plcHigh":3.0,"mkt":0.122,"mdl":0.126,"dv":0.037,"p3":32.8,"evLo":72.3,"evHi":98.5,"prevFin":0.0,"prevPop":1,"rest":30,"starts":7,"wtDiff":0,"leg":"先行","jkyWin":14.9,"classUp":1},{"rank":3,"mrank":3,"no":5,"gate":3,"name":"ホットシート","sex":"牡","age":3,"jockey":"川田","trainer":"大久保","odds":6.6,"plcLow":1.9,"plcHigh":2.5,"mkt":0.12,"mdl":0.112,"dv":-0.064,"p3":32.6,"evLo":62.0,"evHi":81.5,"prevFin":0.27,"prevPop":2,"rest":226,"starts":3,"wtDiff":0,"leg":"先行","jkyWin":23.8,"classUp":0},{"rank":4,"mrank":5,"no":6,"gate":4,"name":"ジャカルタバオ","sex":"セ","age":3,"jockey":"浜中","trainer":"藤野","odds":7.8,"plcLow":2.7,"plcHigh":3.8,"mkt":0.101,"mdl":0.073,"dv":-0.331,"p3":31.0,"evLo":83.7,"evHi":117.8,"prevFin":0.0,"prevPop":3,"rest":127,"starts":8,"wtDiff":0,"leg":"追い込み","jkyWin":10.2,"classUp":1},{"rank":5,"mrank":4,"no":4,"gate":3,"name":"ゴーゴーパンチ","sex":"牡","age":3,"jockey":"永島","trainer":"天間","odds":8.3,"plcLow":2.4,"plcHigh":3.3,"mkt":0.095,"mdl":0.111,"dv":0.148,"p3":31.0,"evLo":74.4,"evHi":102.3,"prevFin":0.36,"prevPop":6,"rest":22,"starts":9,"wtDiff":0,"leg":"先行","jkyWin":2.1,"classUp":0},{"rank":6,"mrank":6,"no":8,"gate":5,"name":"フリッシュ","sex":"牡","age":3,"jockey":"藤懸","trainer":"平田","odds":13.6,"plcLow":2.4,"plcHigh":3.4,"mkt":0.058,"mdl":0.066,"dv":0.124,"p3":22.0,"evLo":52.8,"evHi":74.8,"prevFin":0.77,"prevPop":8,"rest":65,"starts":9,"wtDiff":0,"leg":"追い込み","jkyWin":3.6,"classUp":0},{"rank":7,"mrank":8,"no":14,"gate":8,"name":"ファイブタンゴ","sex":"牡","age":3,"jockey":"西村淳","trainer":"秋山","odds":15.0,"plcLow":4.0,"plcHigh":5.7,"mkt":0.053,"mdl":0.049,"dv":-0.073,"p3":19.6,"evLo":78.5,"evHi":111.9,"prevFin":0.33,"prevPop":6,"rest":246,"starts":5,"wtDiff":0,"leg":"追い込み","jkyWin":11.0,"classUp":0},{"rank":8,"mrank":7,"no":7,"gate":4,"name":"ディーエストッキー","sex":"牡","age":5,"jockey":"小沢","trainer":"橋口","odds":16.1,"plcLow":4.6,"plcHigh":6.6,"mkt":0.049,"mdl":0.051,"dv":0.029,"p3":18.9,"evLo":86.7,"evHi":124.5,"prevFin":0.36,"prevPop":5,"rest":16,"starts":21,"wtDiff":0,"leg":"追い込み","jkyWin":4.7,"classUp":0},{"rank":9,"mrank":11,"no":3,"gate":2,"name":"メイショウサトノヒ","sex":"牡","age":4,"jockey":"幸","trainer":"長谷川","odds":22.2,"plcLow":4.8,"plcHigh":7.0,"mkt":0.036,"mdl":0.037,"dv":0.039,"p3":13.8,"evLo":66.1,"evHi":96.4,"prevFin":0.4,"prevPop":14,"rest":23,"starts":19,"wtDiff":0,"leg":"差し","jkyWin":6.0,"classUp":0},{"rank":10,"mrank":10,"no":13,"gate":7,"name":"テイクイットオール","sex":"牡","age":4,"jockey":"柴田裕","trainer":"中竹","odds":22.9,"plcLow":6.3,"plcHigh":9.2,"mkt":0.035,"mdl":0.041,"dv":0.171,"p3":13.4,"evLo":84.4,"evHi":123.3,"prevFin":0.33,"prevPop":11,"rest":78,"starts":14,"wtDiff":0,"leg":"差し","jkyWin":1.1,"classUp":0},{"rank":11,"mrank":9,"no":1,"gate":1,"name":"シュネーグロッケン","sex":"牡","age":4,"jockey":"吉村","trainer":"清水久","odds":25.3,"plcLow":4.2,"plcHigh":6.0,"mkt":0.031,"mdl":0.046,"dv":0.394,"p3":11.7,"evLo":49.2,"evHi":70.4,"prevFin":0.47,"prevPop":13,"rest":43,"starts":15,"wtDiff":0,"leg":"追い込み","jkyWin":5.9,"classUp":0},{"rank":12,"mrank":13,"no":12,"gate":7,"name":"クリノセーラーマン","sex":"牡","age":3,"jockey":"田口","trainer":"大橋","odds":41.9,"plcLow":6.0,"plcHigh":8.7,"mkt":0.019,"mdl":0.016,"dv":-0.193,"p3":7.3,"evLo":43.5,"evHi":63.1,"prevFin":0.55,"prevPop":10,"rest":16,"starts":4,"wtDiff":0,"leg":"追い込み","jkyWin":5.1,"classUp":0},{"rank":13,"mrank":12,"no":15,"gate":8,"name":"プラチナムディスク","sex":"牝","age":3,"jockey":"横山琉","trainer":"小笠","odds":52.3,"plcLow":10.5,"plcHigh":15.5,"mkt":0.015,"mdl":0.02,"dv":0.301,"p3":5.9,"evLo":62.5,"evHi":92.2,"prevFin":0.71,"prevPop":5,"rest":120,"starts":7,"wtDiff":0,"leg":"逃げ・先行","jkyWin":4.3,"classUp":1},{"rank":14,"mrank":15,"no":11,"gate":6,"name":"ユキノサイエンス","sex":"牝","age":3,"jockey":"中井","trainer":"小野","odds":60.7,"plcLow":12.7,"plcHigh":18.7,"mkt":0.013,"mdl":0.015,"dv":0.112,"p3":5.5,"evLo":70.1,"evHi":103.2,"prevFin":0.36,"prevPop":9,"rest":51,"starts":8,"wtDiff":0,"leg":"差し","jkyWin":3.3,"classUp":1},{"rank":15,"mrank":14,"no":2,"gate":2,"name":"シャープインサイト","sex":"牡","age":3,"jockey":"菱田","trainer":"東田","odds":61.4,"plcLow":11.1,"plcHigh":16.3,"mkt":0.013,"mdl":0.015,"dv":0.149,"p3":5.0,"evLo":55.4,"evHi":81.3,"prevFin":0.4,"prevPop":12,"rest":8,"starts":8,"wtDiff":0,"leg":"追い込み","jkyWin":5.3,"classUp":0}],"miss":["市場集中度が不足（m3=0.482、必要0.75）","対象外クラス（1勝）"],"options":[{"bet":"妙味馬の単勝","roi":101.6,"n":2765,"hit":6.7,"pick":"1番 シュネーグロッケン","odds":25.3,"flag":"value","warn":"P(勝ち)57.1% / 最長連敗77 / 上位3本除外で98.4%"},{"bet":"馬連(1-2番人気)","roi":97.8,"n":356,"hit":9.3,"pick":"9番 エイシンティザー × 10番 リン","odds":null},{"bet":"5番人気の単勝","roi":93.7,"n":445,"hit":null,"pick":"4番 ゴーゴーパンチ","odds":8.3},{"bet":"5番人気の複勝","roi":88.3,"n":445,"hit":31.7,"pick":"4番 ゴーゴーパンチ","odds":8.3},{"bet":"2番人気の複勝","roi":87.3,"n":356,"hit":43.8,"pick":"10番 リン","odds":6.5},{"bet":"4番人気の単勝","roi":85.3,"n":414,"hit":null,"pick":"6番 ジャカルタバオ","odds":7.8}],"m3":0.4816,"dv":0.0369,"p2no":10,"p2name":"リン","p2odds":6.5,"oddsTime":"2026-09-21 07:25:30","oddsAge":545,"plc":[[2.2,3.0]],"ok":false}],"fallbackRace":11,"oddsAge":485,"stale":true,"valueHorses":[{"r":6,"no":15,"name":"クラッチスラッガー","odds":12.8,"dv":0.241},{"r":6,"no":10,"name":"ロットブラータ","odds":13.4,"dv":0.316},{"r":6,"no":12,"name":"ディープサミット","odds":16.7,"dv":0.292},{"r":7,"no":5,"name":"ベルサンローラン","odds":10.6,"dv":0.319},{"r":8,"no":12,"name":"リリーサンダー","odds":28.2,"dv":0.242},{"r":9,"no":6,"name":"コロナドブリッジ","odds":10.2,"dv":0.239},{"r":10,"no":1,"name":"キタサンハナビラ","odds":10.0,"dv":0.236},{"r":10,"no":9,"name":"ファームツエンティ","odds":17.5,"dv":0.201},{"r":12,"no":1,"name":"シュネーグロッケン","odds":25.3,"dv":0.394}],"notes":{"1":{"time":"08:30","text":"m3=0.764で今日唯一「市場集中度」を満たしたレース。ところが肝心の2番人気エコロラーダの乖離が −0.093 で、モデルは市場評価を2.5ポイント割り引いている。\n面白いのは、この集中度が朝の1時間で作られたものだということ。前夜は1番人気ポカポカヨウキが2.3倍、m3は0.717だった。それが1.9倍まで買われてm3が0.764に上がった。つまり集中したのは「1番人気に票が寄ったから」であって、2番人気が強くなったからではない。\nこの戦略が求めているのは「上位が抜けていて、その2番手が過小評価されている」形。1番人気だけが買われて2番手が置いていかれる形は、集中度の数字だけ見れば同じでも中身が逆。条件が2つ揃って初めて意味を持つのはこのためで、m3単独ではz=0.41しか出ないという検証結果とも符合する。"},"2":{"time":"08:30","text":"2番人気ハマナスノサクコロの乖離 +0.165 は今日の2番人気では最大。モデルは市場の18.5%に対して21.8%を出している。ところが m3=0.577 と市場が割れていて、集中度の条件で落ちた。\n逆に1番人気マリアンデールは −0.155 と大きく割り引かれていて、モデルの中では1番人気と2番人気の評価が逆転している。市場は3.5倍と4.3倍でマリアンデールを上に置いているが、モデルの正規化確率では 0.194 対 0.218 でハマナスが上。\n「それでも買うなら」の最良が2番人気の単勝90%なのは、この逆転を反映している。ただし90%は依然として期待値マイナスで、モデルが市場を逆転させた程度では控除率20%を埋められない。市場を覆すだけでは足りない、という数字がそのまま出ている。"},"3":{"time":"08:30","text":"3番人気エルダークローネの乖離 −0.188 が目を引く。市場は11.4%と見ているがモデルは9.4%。一方で2番人気ノヴァーリスは +0.137 で、この2頭の評価がモデルの中では入れ替わっている。\nこのレースは前夜から人気順が入れ替わった3レースのうちの1つで、前夜は3番コジアンが2番人気(6.7倍)、6番ノヴァーリスが3番人気(6.8倍)だった。それが今朝はノヴァーリス5.9倍・コジアン8.6倍と差がついた。0.1倍差で並んでいたものが2.7倍差になったわけで、朝のオッズがいかに動くかの実例になっている。\nm3=0.568で集中度は不足。13頭立ての未勝利戦は、市場が結論を出しきれない典型的な形。"},"4":{"time":"08:30","text":"dom12=1.02、つまり1番人気と2番人気のオッズがほぼ同じ(4.9倍と5.0倍)。m3=0.463は今日で2番目に低く、市場が完全に割れている。新馬戦なので出走馬に過去走が無く、市場もモデルも材料が乏しい。\nこういうレースでモデルの乖離はどれも小さい(最大でも +0.052)。材料が無ければモデルも市場と同じことしか言えない、という当たり前の結果が出ている。\n「それでも買うなら」の最良が85%止まりなのも当然で、市場が読めていないレースは買い手にとっても読めない。控除率20%を引かれた上で運任せになるので、期待値は素直に低い。混戦=荒れる=妙味、という直感は、少なくとも複勝系のプールでは成立しない。"},"5":{"time":"08:30","text":"m3=0.725と集中度はあと一歩。しかし上位2頭(シホノノービレ −0.016、キングリア −0.057)がどちらも負の乖離で、モデルは上位の評価を下げている。代わりに4番人気ニューイントリーグ +0.097、5番人気アヴァロン +0.120 と、下の方を拾っている。\n前夜から1番人気と2番人気が入れ替わったレース。前夜は7番キングリア2.7倍が1番人気だったが、今朝は6番シホノノービレ2.3倍が上に立った。\n「6番人気の単勝107%」が今日のレース別最良値だが、これは「5番人気帯 × 混戦気味 × 乖離プラス」のセルの過去平均であって、この馬が特別に良いという意味ではない。サンプル1,035件の平均値で、的中率は数%。1レース単位では何の保証もない数字だと理解した上で眺めるのが正しい。"},"6":{"time":"08:30","text":"1勝クラスなのでそもそも対象外(過去ROI 94.0%)。ただし今日いちばん「妙味馬」が多いレースで、乖離≥0.2かつ8〜30倍の馬が3頭もいる。クラッチスラッガー(12.8倍 +0.241)、ロットブラータ(13.4倍 +0.316)、ディープサミット(16.7倍 +0.292)。\n同時に3番人気エイユーファイヤーが −0.370 と今日の全馬で最大の負の乖離。市場は9.2%と見ているがモデルは6.4%。市場が買い被っている馬と、置いていかれている馬が、同じレースに同居している。\nモデルの情報は「割高な馬を避ける」側にこそ安定して存在する、という検証結果がある。過大評価側は凍結アウトオブサンプル検定で再現したが、過小評価側は消えた。だから本来この−0.370のほうが信頼できる情報で、+0.3台の3頭は「そう見えているだけ」の可能性が高い。1レースに3頭も出るのは偏りの兆候でもある。"},"7":{"time":"08:30","text":"18頭立て、dom12=1.11で1番人気と2番人気がほぼ並ぶ完全な混戦。m3=0.442。\nこのレースの主役は5番人気ベルサンローラン(10.6倍、乖離+0.319)。市場は7.5%と見ているがモデルは10.3%を出している。今日の妙味馬9頭のうち、乖離の大きさでは上位。\n対照的に3番人気ヴァージルは −0.223。7.9倍という人気に対してモデルは8.0%しか与えていない。\n前夜から1番人気と2番人気が入れ替わった。前夜は12番ケールハイム4.7倍が1番人気だったが、今朝は2番ダンデノン4.4倍が上。18頭立ての1勝クラスは票が薄く広がるので、締切まで順位は動き続けるはず。10分前の判定でまた違う顔になっている可能性が高い。"},"8":{"time":"08:30","text":"今日いちばん興味深い歪みが出ているレース。上位3頭の単勝が3.7倍・4.0倍・4.1倍とほぼ横並びなのに、複勝プールでの評価が全く違う。3番ロードアルディートは複勝1.3〜1.6倍で複勝1番人気、6番ディニテは複勝2.9〜4.3倍で複勝7番人気。単勝でほぼ同格の馬が、複勝では7つも人気順が違う。\nモデルもロードアルディートに +0.169、レッドフレーザーに −0.174 と、はっきり序列をつけている。単勝プールが3頭を同格と見ているのに、複勝プールとモデルの両方が「3番が上」と言っている形。\nこれは朝のプールが薄いことによる歪みの可能性が高い。複勝プールは単勝より出来高が小さく、朝のうちは少額の投票で大きく動く。発走30分前の再判定で、この差がどこまで残るか見どころ。前夜から m3 が 0.708→0.608 と最も大きく下がったレースでもある。"},"9":{"time":"08:30","text":"2勝クラスなので対象クラス内。しかし m3=0.492 と集中度が足りず、さらに2番人気ピカラの乖離が −0.194 と大きく負。市場は17.7%と見ているがモデルは14.5%。\nこのレースはモデルの見解が市場とかなり食い違っている。1番人気ポートデラメール +0.094、3番人気ヤマニンバロネス +0.164、5番人気コロナドブリッジ +0.239 と、2番人気以外を軒並み持ち上げている。つまり「2番人気だけが買われすぎ」という読み。\nこういう形は本戦略が探しているものの真逆にあたる。戦略は「2番人気が過小評価されているレース」を買うので、2番人気が過大評価されているなら当然見送り。条件式は m3 と乖離の2つだけだが、外れ方にも意味の違いがある。"},"10":{"time":"08:30","text":"m3=0.441、dom12=1.28で市場が割れている。前夜から1番人気が4.3倍まで緩み(前夜3.2倍)、逆に3番人気が7.5→7.1倍と詰めた。3勝クラスらしく力が拮抗している。\n妙味馬が2頭。4番人気キタサンハナビラ(10.0倍 +0.236)と9番人気ファームツエンティ(17.5倍 +0.201)。一方で5番人気ベトルスは −0.231 で、10.4倍という評価に対してモデルは6.1%しか出していない。4番人気と5番人気がオッズ上は10.0倍と10.4倍でほぼ同じなのに、モデルの中では 0.100 対 0.061 と1.6倍の差がついている。\n同じ価格帯の中で優劣をつけるのがこのモデルの仕事で、それは順位付けの精度(AUC)ではなく「その価格帯で市場が高すぎるか安すぎるか」というキャリブレーションのズレを学習しているから。AUCは市場と互角(0.8381対0.8379)なのにROIには効く、というのはそういう意味。"},"11":{"time":"08:30","text":"本日のメイン。ロブチェンが1.5倍の断然人気で dom12=5.07、1番人気が2番人気の5倍支持されている今日いちばんの1強。\nモデルはロブチェンをさらに買っていて乖離 +0.050(市場52.9%→モデル55.6%)。一方で2番人気グリーンエナジーは −0.225 と大きく割り引き、3番ゴーラッキー +0.063、4番コンジェスタス +0.053 と下を拾う。「1番人気は強い、2番人気は買われすぎ、3〜4番人気が置いていかれている」という読み。\nこの形は過去データでも意味を持つ。m3≥0.70のレースで2番人気の乖離が負のとき、ワイド1-3が91.4%、ワイド1-2が86.8%。逆に2番人気の乖離が正なら1-2が91.2%、1-3が76.5%と、符号できれいに反転する。つまり「割高な2番人気を飛ばす」方向自体は本物。ただし91%は依然マイナスで、買う根拠にはならない。\n採用条件から外れた理由は3つ全部(集中度0.708で不足、乖離が負、OP重賞は対象外)。ちなみにOP重賞での過去ROIは93.5%で、戦略が成立しないクラス。"},"12":{"time":"08:30","text":"最終レース。4番人気ジャカルタバオが −0.331 と今日2番目に大きい負の乖離。7.8倍という人気に対してモデルは7.3%しか与えていない。一方で5番人気ゴーゴーパンチは +0.148、9番人気シュネーグロッケン(25.3倍)は +0.394 で今日の全馬中で最大。\n最終レースは資金を取り返そうとする投票が入りやすく、人気薄に票が流れやすいと言われる。ただし今日のデータで見る限り m3=0.482 は他の混戦レースと変わらず、特別に荒れる形にはなっていない。\nこの戦略にとっては、最終レースだろうと条件は同じ。集中度が足りなければ買わない。「最後だから何か買う」は、検証を通じていちばん排除したかった行動そのもの。"}}};
+
+  const mins=s=>{const[h,m]=s.split(":").map(Number);return h*60+m;};
+  const fmt=t=>String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+  const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes();};
+  const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  function schedule(){const o=[];for(let r=1;r<=12;r++){const p=mins(POSTS[r]);o.push({t:p-30,r,lead:30},{t:p-10,r,lead:10});}return o.sort((a,b)=>a.t-b.t);}
+  function nextCheck(){const n=nowMin();return schedule().find(s=>s.t>=n)||null;}
+  function raceOf(r){return STATE&&Array.isArray(STATE.races)?STATE.races.find(x=>x.r===r):null;}
+  function route(){
+    const h=location.hash||"";
+    if(h==="#/about") return {view:"about"};
+    const m=h.match(/^#\/r\/(\d+)$/);
+    return m?{view:"race",r:+m[1]}:{view:"board"};
+  }
+
+  /* ───────── 一覧 ───────── */
+  function board(){
+    const s=STATE,n=nowMin(),nx=nextCheck();
+    const bet=s&&s.verdict==="bet"&&Array.isArray(s.bets)&&s.bets.length;
+    let h="";
+
+    h+='<div class="verdict"><div class="vtop">'+
+       '<div class="vmark '+(bet?"go":"no")+'">'+(s?(bet?"買":"見"):"—")+'</div><div class="vbody">'+
+       '<div class="vlabel">'+(s?(bet?"該当あり":"該当なし"):"判定待ち")+'</div>';
+    if(bet){const b=s.bets[0];
+      h+='<div class="vmain">R'+b.race+" "+b.horse+"番 "+esc(b.name)+' の複勝</div>'+
+         '<div class="vsub">単勝'+b.odds+"倍／"+esc(b.note||"")+'</div>';
+    }else if(s){
+      h+='<div class="vmain">買わない</div><div class="vsub">'+esc(s.reason||"条件を満たすレースがありません。")+'</div>';
+    }else{
+      h+='<div class="vmain">まだ判定していません</div><div class="vsub">最初の判定は 09:30（R1 発走30分前）の予定です。</div>';
+    }
+    let upd=s?esc(s.updatedAt||"—"):"—";
+    if(s&&typeof s.updatedAtMin==="number"&&n-s.updatedAtMin>45) upd+=' <span class="stale">（更新停止）</span>';
+    h+='</div></div><div class="vmeta"><span>更新 <b>'+upd+'</b></span>'+
+       '<span>オッズ <b>'+(s?esc(s.oddsTime||"—"):"—")+'</b></span>'+
+       '<span>次の判定 <b>'+(nx?fmt(nx.t)+"（R"+nx.r+" "+nx.lead+"分前）":"本日終了")+'</b></span></div></div>';
+
+    if(s&&s.stale){
+      h+='<div class="warnbar"><b>このオッズはまだ古い</b>（発走'+s.oddsAge+'分前の値）。'+
+         '前夜→朝の実測で7/12レースの人気順が入れ替わり、戦略は±40%の変動で崩壊します。'+
+         '発走30分前の判定まで、下の内容は参考値として見てください。</div>';
+    }
+    h+='<h2>レース別（タップで詳細）</h2><div class="rlist">';
+    for(let r=1;r<=12;r++){
+      const x=raceOf(r)||{},p=mins(POSTS[r]),isNext=nx&&nx.r===r,done=p<=n;
+      const best=Array.isArray(x.options)&&x.options.length?x.options[0]:null;
+      const hit=x.m3!=null&&x.dv!=null&&x.m3>=0.75&&x.dv>0&&OK_CLS.has(x.cls);
+      h+='<button class="rcard '+(isNext?"next":(done?"done":""))+'" data-r="'+r+'">'+
+         '<div class="rno mono">'+r+'</div><div class="rmid">'+
+         '<div class="rname">'+esc(x.name||"—")+'</div>'+
+         '<div class="rsub mono">'+POSTS[r]+' 発走'+(x.shape?' ／ <span class="pill shape">'+esc(x.shape)+'</span>':"")+
+         (x.m3!=null?' <span class="thr">m3 '+x.m3.toFixed(3)+'</span>':"")+
+         (x.oddsAge>=60?' <span class="thr neg">オッズ'+x.oddsAge+'分前</span>':"")+
+         (x.modelPick&&!x.modelPick.agree?' <span class="pill shape">モデル別推し</span>':"")+'</div></div>'+
+         '<div class="rright">'+(hit?'<span class="pill go">買い</span>':
+            (best?'<div class="rbest mono '+(best.roi>=100?"over":"")+'">'+best.roi.toFixed(0)+'%</div>':'<div class="rbest">—</div>'))+
+         '<div class="rarrow">詳細 ›</div></div></button>';
+    }
+    h+='</div>';
+    h+='<div class="log" id="log"></div>';
+
+    h+='<div class="note"><p><b>このページは何を判定しているか</b></p>'+
+       '<p>「市場が上位3頭に集中（m3≥0.75）」「2番人気をモデルが市場より高く評価（乖離&gt;0）」「新馬・未勝利・2勝・3勝クラス」——この3つが揃ったレースだけ2番人気の複勝を1点買う戦略です。</p>'+
+       '<ul><li>過去実績 ROI 113.1%、最大ドローダウン1.5%、最長連敗7</li>'+
+       '<li><b>該当するのは全レースの8.2%。</b>ゼロの日も普通にあります</li>'+
+       '<li>「買わない」は異常ではなく<b>正常な出力</b>です</li></ul>'+
+       '<p style="margin-top:8px">各レースの「それでも買うなら」は<b>ほぼすべて期待値マイナス</b>です。読み物としてお使いください。</p>'+
+       '<p>判定は発走30分前と10分前。前夜→朝の実測で7/12レースの人気順が入れ替わり、戦略は±40%の変動で崩壊するためです。</p></div>';
+    h+='<footer>当日より前の全データ（127,757行）で学習し直した市場オフセットモデル（木100本×6シード平均）による。オッズは netkeiba 公開APIから2秒間隔で取得。</footer>';
+    return h;
+  }
+
+  /* ───────── レース詳細 ───────── */
+  function raceView(r){
+    const x=raceOf(r);
+    if(!x) return '<div class="sec"><div class="secbody">R'+r+' のデータはまだありません。最初の判定後に表示されます。</div></div>';
+    const hit=x.m3>=0.75&&x.dv>0&&OK_CLS.has(x.cls);
+    let h="";
+
+    h+='<div class="sec"><div class="kv">'+
+       '<div><b>発走</b><span class="mono">'+POSTS[r]+'</span></div>'+
+       '<div><b>クラス</b>'+esc(x.cls)+(OK_CLS.has(x.cls)?"":'<span class="thr"> 対象外</span>')+'</div>'+
+       '<div><b>頭数</b><span class="mono">'+(x.n||"—")+'</span></div>'+
+       '<div><b>市場の形</b>'+esc(x.shape||"—")+'</div>'+
+       '<div><b>m3</b><span class="mono">'+(x.m3!=null?x.m3.toFixed(3):"—")+'</span></div>'+
+       '<div><b>1番人気/2番人気</b><span class="mono">'+(x.dom12!=null?x.dom12.toFixed(2)+"倍":"—")+'</span></div>'+
+       '<div><b>オッズ鮮度</b><span class="mono'+(x.oddsAge>=60?" neg":"")+'">'+
+         (x.oddsAge!=null?"発走"+x.oddsAge+"分前":"—")+'</span></div></div>'+
+       '<div class="secbody"><p>'+esc(x.shapeDesc||"")+'</p>'+
+       (hit?'<p style="color:var(--go);font-weight:700">3条件すべて成立。2番人気の複勝が買い目です。</p>'
+           :'<p><b>採用条件から外れた理由</b></p><ul style="margin:0;padding-left:17px">'+
+             (x.miss||[]).map(m=>'<li>'+esc(m)+'</li>').join("")+'</ul>')+
+       '</div></div>';
+
+    h+='<div class="sec"><div class="sechead">採用条件</div>'+
+       cond("市場集中度 m3 ≥ 0.75","上位3頭の市場確率合計。基礎ROIを100%まで持ち上げる価格選択",
+            x.m3!=null?x.m3.toFixed(3):"—", x.m3!=null?x.m3>=0.75:null)+
+       cond("2番人気の乖離 > 0","モデルが市場より高く見ているか。唯一の情報としての優位",
+            x.dv!=null?(x.dv>0?"+":"")+x.dv.toFixed(3):"—", x.dv!=null?x.dv>0:null)+
+       cond("クラスが 新馬/未勝利/2勝/3勝","1勝クラス94.0%・OP重賞93.5%では成立しない",
+            esc(x.cls||"—"), x.cls?OK_CLS.has(x.cls):null)+'</div>';
+
+    if(Array.isArray(x.horses)&&x.horses.length){
+      const mp=x.modelPick;
+      h+='<div class="sec"><div class="sechead">出走馬 ／ 人気順</div>'+
+        (mp?'<div class="pickbar'+(mp.agree?"":" dis")+'">'+
+          (mp.agree
+            ? '<b>モデルの1位指名は市場と一致</b>（'+mp.no+'番 '+esc(mp.name)+' '+mp.odds.toFixed(1)+'倍）'
+            : '<b>モデルは '+mp.no+'番 '+esc(mp.name)+'（市場'+mp.mktRank+'番人気 '+mp.odds.toFixed(1)+'倍）を1位に推す</b>')+
+          '<span class="sub">2つ以上順位が動いた馬 '+(x.nMoved!=null?x.nMoved:"—")+'頭'+
+          (mp.agree?"":" ／ 市場と食い違ったとき、当たるのはモデル49%・市場51%")+'</span></div>':"")+
+        x.horses.map(function(t){
+          const tgt=t.rank===2;
+          const w=Math.min(22,Math.abs(t.dv)*60);
+          const bar='<span class="dvbar"><i class="'+(t.dv>0?"p":"n")+'" style="width:'+w.toFixed(0)+'px"></i></span>';
+          const ev=t.evLo!=null?t.evLo:null;
+          const plc=t.plcLow!=null?(t.plcLow===t.plcHigh?t.plcLow:t.plcLow+"〜"+t.plcHigh):"—";
+          const bits=[];
+          if(t.prevPop!=null) bits.push('<span>前走'+t.prevPop+'番人気</span>');
+          if(t.rest!=null) bits.push('<span>中'+t.rest+'日</span>');
+          if(t.leg) bits.push('<span>'+t.leg+'</span>');
+          if(t.starts===0) bits.push('<span>初出走</span>');
+          else if(t.starts!=null) bits.push('<span>'+t.starts+'戦</span>');
+          if(t.wtDiff!=null&&t.wtDiff!==0) bits.push('<span>馬体'+(t.wtDiff>0?"+":"")+t.wtDiff+'kg</span>');
+          if(t.classUp!=null&&t.classUp>0) bits.push('<span>昇級</span>');
+          return '<div class="hcard'+(tgt?" target":"")+'">'+
+            '<div class="h1"><span class="hpop'+(tgt?" t":"")+'">'+t.rank+'人気</span>'+
+            (t.mrank!=null?'<span class="mpop'+(t.mrank<t.rank?" up":(t.mrank>t.rank?" dn":""))+'">'+
+              'モデル'+t.mrank+'位'+(t.mrank!==t.rank?(t.mrank<t.rank?" ↑":" ↓")+Math.abs(t.mrank-t.rank):"")+
+              '</span>':"")+
+            '<span class="hnm">'+t.no+'番 '+esc(t.name)+'</span>'+
+            '<span class="hsub">'+esc(t.sex)+(t.age||"")+' '+esc(t.jockey)+'</span></div>'+
+            '<div class="h2r">'+
+              '<div><b>単勝</b><span class="mono">'+t.odds.toFixed(1)+'</span></div>'+
+              '<div><b>複勝</b><span class="mono">'+plc+'</span></div>'+
+              '<div><b>3着内の推定</b><span class="mono">'+t.p3.toFixed(1)+'%</span></div>'+
+              '<div><b>複勝の期待値</b><span class="mono ev '+(ev!=null&&ev>=100?"good":"bad")+'">'+
+                 (ev!=null?ev.toFixed(0)+"%":"—")+'</span></div>'+
+              '<div><b>乖離</b><span class="mono '+(t.dv>0?"pos":"neg")+'">'+
+                 (t.dv>0?"+":"")+t.dv.toFixed(3)+'</span>'+bar+'</div>'+
+            '</div>'+
+            (bits.length?'<div class="h3r">'+bits.join("")+'</div>':"")+
+            '</div>';
+        }).join("")+
+        '<div class="legend">'+
+        '<div class="lgitem"><b>3着内の推定</b>'+
+        '<p>単勝オッズから各馬の3着内率を計算したもの。<b>市場の意見を整形しただけ</b>で、独立した予想ではない。</p>'+
+        '<p>計算にはPlackett-Luceという方法を使うが、これは「各馬が独立に走る」と仮定するため'+
+        '<b>上位人気の3着内率を高く見積もりすぎる</b>。9,363レースで実測した補正'+
+        '（1番人気×0.882、2番人気×0.897、4番人気×0.995、6番人気×1.153）を掛けてある。</p>'+
+        '<p class="howto"><b>使い方</b>：複勝配当と掛けたものが「複勝の期待値」。'+
+        '100%を超えていれば<b>単勝プールと複勝プールの評価が食い違っている</b>ということ。'+
+        'ただしどちらが正しいかは分からないし、朝は複勝プールが薄く配当の幅が広いので数字が暴れる。'+
+        '幅の狭い（下限と上限が近い）馬ほど信用できる。</p></div>'+
+
+        '<div class="lgitem"><b>モデル○位</b>'+
+        '<p>モデルが予測した勝率の順位。市場の人気順と違うときだけ色が付き、'+
+        '↑は市場より高く、↓は低く評価していることを示す。</p>'+
+        '<p class="howto"><b>ここが肝心</b>：モデルの1位指名は<b>89.5%が市場1番人気と同じ馬</b>。'+
+        '残り10.5%で食い違ったときも、当たったのは<b>モデル49%・市場51%</b>でほぼ引き分け。'+
+        '<b>勝ち馬を当てる力にモデルの優位は無い</b>（AUCはモデル0.8384、市場0.8379でほぼ同点）。</p>'+
+        '<p class="howto">モデル順位ごとの単勝ROIも1位79.8%・2位82.5%・3位76.0%と、'+
+        'どれも控除率どおり。<b>「モデルの本命だから買う」には根拠がない</b>。'+
+        '意味があるのは順位そのものではなく、次の「乖離」のほう。</p></div>'+
+
+        '<div class="lgitem"><b>乖離</b>'+
+        '<p>モデルの評価 ÷ 市場の評価（対数）。正ならモデルは市場より高く見ている。'+
+        '帯ごとの実績は下表のとおり（同じオッズ帯・同じ頭数の馬と比べた値）。</p>'+
+        '<div class="dt"><table><thead><tr><th>乖離</th><th>単勝ROI</th><th>複勝ROI</th><th>頭数</th></tr></thead><tbody>'+
+        '<tr><td>+0.20以上</td><td class="num">88.9%</td><td class="num">80.0%</td><td class="num">8,250</td></tr>'+
+        '<tr><td>+0.05〜+0.20</td><td class="num">85〜88%</td><td class="num">76%</td><td class="num">19,468</td></tr>'+
+        '<tr><td>−0.05〜+0.05</td><td class="num">78.9%</td><td class="num">75.9%</td><td class="num">21,945</td></tr>'+
+        '<tr><td>−0.20〜−0.05</td><td class="num">60〜68%</td><td class="num">67〜72%</td><td class="num">20,097</td></tr>'+
+        '<tr><td class="lo">−0.20以下</td><td class="num lo">45.4%</td><td class="num lo">54.4%</td><td class="num">11,245</td></tr>'+
+        '</tbody></table></div>'+
+        '<p class="howto"><b>使い方その1 — 避ける側がいちばん確実。</b>'+
+        '乖離−0.20以下の馬は単勝45.4%・複勝54.4%。全体平均（73%/72%）から30ポイント近く落ちる。'+
+        '市場の誤りは「買われすぎ」方向にしか安定して存在しないことが検証で分かっており、'+
+        '<b>この負の側が最も信用できる使い方</b>。</p>'+
+        '<p class="howto"><b>使い方その2 — 正でも単独では買えない。</b>'+
+        '乖離+0.20以上でも単勝88.9%止まりで、まだ負ける。'+
+        '「割安に見える」ことと「買って儲かる」ことは違う。控除率20%を埋めきれていない。</p>'+
+        '<p class="howto"><b>使い方その3 — ±0.05以内は読まない。</b>'+
+        'この帯は78.9%で全体平均とほぼ同じ。誤差の範囲なので意味を探さないほうがよい。</p>'+
+        '<p class="howto"><b>買いに効くのは1か所だけ。</b>'+
+        'm3≥0.75のレースの<b>2番人気</b>に限って乖離を重ねたときだけ、100.3%→107.2%と'+
+        '損益分岐を超える。それ以外の場所では、乖離は「買う理由」ではなく'+
+        '<b>「避ける理由」として使うのが正しい</b>。</p></div>'+
+        '</div></div>';
+    }
+
+    if(Array.isArray(x.options)&&x.options.length){
+      h+='<div class="sec"><div class="sechead">それでも買うなら ／ 期待ROI順</div>'+
+         x.options.map(o=>'<div class="fbrow">'+
+           '<div class="fbroi mono '+(o.roi>=100?"over":"")+'">'+o.roi.toFixed(1)+'</div><div>'+
+           '<div class="fbbet">'+esc(o.bet)+'</div>'+
+           '<div class="fbpick">'+esc(o.pick)+(o.odds?'<span class="thr"> '+o.odds+'倍</span>':"")+'</div>'+
+           '<div class="fbmeta mono">過去'+o.n.toLocaleString()+'件'+(o.hit!=null?' ／ 的中率'+o.hit+'%':"")+'</div>'+
+           (o.warn?'<div class="fbwarn">'+esc(o.warn)+'</div>':"")+
+           '</div></div>').join("")+
+         '<div class="secbody" style="border-top:1px solid var(--edge2);color:var(--ink3);font-size:11.5px">'+
+         '数字は同じ「人気順位 × 市場集中度 × 乖離の符号」だった過去レースの平均ROI。'+
+         '100%未満＝期待値マイナスで、買いの推奨ではありません。</div></div>';
+    }
+
+    if(Array.isArray(x.value)&&x.value.length){
+      h+='<div class="sec"><div class="sechead">妙味馬（乖離≥0.2 かつ 8〜30倍）</div>'+
+         x.value.map(v=>'<div class="hrow2"><div class="hrank">·</div>'+
+           '<div class="hname">'+v.no+'番 '+esc(v.name)+'</div>'+
+           '<div class="hodds mono">'+v.odds.toFixed(1)+'</div>'+
+           '<div class="hdv mono pos">+'+v.dv.toFixed(3)+'</div></div>').join("")+
+         '<div class="secbody" style="border-top:1px solid var(--edge2);font-size:11.5px;color:var(--ink3)">'+
+         'この条件の単勝を全部買った場合の過去ROIは101.6%で、唯一100%を超えるセル。'+
+         'ただし日単位で勝てる確率57%、最長連敗77、上位3本の配当を除くと98.4%。</div></div>';
+    }
+
+    if(STATE.notes&&STATE.notes[String(r)]){
+      const nt=STATE.notes[String(r)];
+      h+='<div class="sec"><div class="sechead">解説 ／ '+esc(nt.time||"")+' 時点</div>'+
+         '<div class="secbody">'+nt.text.split("\n").filter(Boolean).map(p=>'<p>'+esc(p)+'</p>').join("")+'</div></div>';
+    }
+    return h;
+  }
+
+
+  /* ───────── 解説 ───────── */
+  function aboutView(){
+    return '<div class="doc">'+
+
+    '<p class="lead">このボードは「どの馬が勝つか」を当てにいっていません。' +
+    '当てにいって市場に勝てないことは、先に確かめてあります。' +
+    'やっているのは<b>どのレースなら買う価値があるかの選別</b>です。</p>'+
+
+    '<h3>まず、市場には勝てない</h3>'+
+    '<p>単勝オッズから控除率を抜いた市場の予測精度はAUC 0.8379。こちらのモデルは0.8381。ほぼ互角です。'+
+    '特徴量を67個に増やし、血統50個、メンバー構成15個、Eloレーティング、ペース構成、絶対タイム指数——'+
+    '思いつくものを全部入れましたが、どれもAUCを動かしませんでした。</p>'+
+    '<p>単勝で収支を合わせるには AUC を +0.06〜0.08 上げる必要があります。到達できたのは +0.0015。'+
+    '必要量の2%です。<b>ボトルネックはアルゴリズムではなく情報</b>で、'+
+    'ニューラルネットにしようがアンサンブルしようが変わりません。</p>'+
+
+    '<h3>ではどこに勝ち目があるか</h3>'+
+    '<p>券種ごとに、何も絞らずに買ったときの回収率を測ると、はっきり分かれます。</p>'+
+    '<div class="dt"><table><thead><tr><th>券種</th><th>実データ</th><th>控除率からの期待値</th><th>差</th></tr></thead><tbody>'+
+    '<tr><td>単勝1番人気</td><td class="num">79.7%</td><td class="num">80.0%</td><td class="num">−0.3</td></tr>'+
+    '<tr><td>複勝1番人気</td><td class="num">85.6%</td><td class="num">80.0%</td><td class="num hi">+5.6</td></tr>'+
+    '<tr><td>複勝2番人気</td><td class="num">84.6%</td><td class="num">80.0%</td><td class="num hi">+4.6</td></tr>'+
+    '<tr><td>ワイド1-2番人気</td><td class="num">82.2%</td><td class="num">77.5%</td><td class="num hi">+4.7</td></tr>'+
+    '<tr><td>馬連1-2番人気</td><td class="num">83.7%</td><td class="num">77.5%</td><td class="num hi">+6.2</td></tr>'+
+    '<tr><td>3連複1-2-3番人気</td><td class="num">81.6%</td><td class="num">75.0%</td><td class="num hi">+6.6</td></tr>'+
+    '</tbody></table></div>'+
+    '<p><b>単勝プールだけが控除率どおり＝効率的</b>です。歪んでいるのは複勝・ワイド・馬連・3連複という二次プール。'+
+    'この+5〜7ptが、このプロジェクトの利益源のすべてです。</p>'+
+    '<div class="callout">モデルを使わない検証でも、同じ結論が別角度から出ました。'+
+    '市場は<b>「勝つ確率」はほぼ正しく値付けし、「崩れない確率」を目立つ馬について過大評価</b>しています。'+
+    '目立たない馬の勝率のズレはz≈0.5（ほぼゼロ）ですが、3着内率のズレはz=3.2〜3.9。'+
+    'だから単勝では効かず、複勝でだけ効きます。</div>'+
+
+    '<h3>なぜ2番人気なのか</h3>'+
+    '<p>複勝には「最低100円は返ってくる」という制度があります。'+
+    'これが下支えに見えて、実は<b>1番人気の上限を作る拘束</b>でした。</p>'+
+    '<div class="dt"><table><thead><tr><th></th><th>的中率</th><th>元返しの割合</th><th>的中時の平均配当</th><th>ROIの上限</th></tr></thead><tbody>'+
+    '<tr><td>複勝1番人気</td><td class="num">90.2%</td><td class="num lo">38.8%</td><td class="num">106.8円</td><td class="num lo">106.8%</td></tr>'+
+    '<tr><td>複勝2番人気</td><td class="num">70.6%</td><td class="num">11.9%</td><td class="num">143.8円</td><td class="num">143.8%</td></tr>'+
+    '<tr><td>複勝3番人気</td><td class="num">37.8%</td><td class="num">1.9%</td><td class="num">214.6円</td><td class="num">—</td></tr>'+
+    '</tbody></table></div>'+
+    '<p>市場が集中したレースでは、1番人気の複勝は4割近くが100円返しになります。'+
+    '仮に100%当たってもROIは106.8%止まりで、損益分岐には93.6%の的中率が必要。'+
+    '<b>最も確実なレースほど元返しで刈り取られる</b>のです。'+
+    '2番人気はちょうどその床を抜けた位置にいて、床の損を受けずに過小評価だけを取れます。</p>'+
+
+    '<h3>4つの条件が何をしているか</h3>'+
+    '<p>条件は役割が違います。片方は「価格の選択」、もう片方が「情報」です。</p>'+
+    '<div class="dt"><table><thead><tr><th>条件</th><th>ROI</th><th>層化帰無</th><th>z</th></tr></thead><tbody>'+
+    '<tr><td>全2番人気（無条件）</td><td class="num">85.9</td><td class="num">85.9</td><td class="num">0.00</td></tr>'+
+    '<tr><td>m3≥0.75 のみ</td><td class="num">100.3</td><td class="num">99.2</td><td class="num lo">0.41</td></tr>'+
+    '<tr><td>＋乖離&gt;0</td><td class="num">107.2</td><td class="num">99.2</td><td class="num">2.27</td></tr>'+
+    '<tr><td>＋クラス絞り</td><td class="num hi">113.1</td><td class="num">98.8</td><td class="num hi">3.38</td></tr>'+
+    '<tr><td>乖離≤0（逆条件）</td><td class="num lo">81.5</td><td class="num">85.5</td><td class="num lo">−2.50</td></tr>'+
+    '</tbody></table></div>'+
+    '<p><b>m3（市場集中度）単独では z=0.41</b>。オッズ帯と集中度で層化すると、'+
+    '85.9%→100.3%の上昇はほぼ完全に説明されてしまいます。'+
+    'つまりこれは情報ではなく「基礎ROIが100%になる価格帯を選んでいるだけ」。ちょうど損益分岐に届きます。</p>'+
+    '<p>そこから先へ押し上げるのが<b>モデルの乖離</b>です。逆条件が対称に沈む（z=−2.50）ことも、'+
+    'これが本物の情報である傍証になります。</p>'+
+
+    '<h3>モデルの中身</h3>'+
+    '<p>市場オフセット型のXGBoostです。<code>base_margin = logit(市場確率)</code> を置いて、'+
+    'オッズを特徴量に使わない63個だけで<b>市場からのズレ</b>を学習します。'+
+    '市場の答えを先に見せた上で「間違っているところを指摘してみろ」と言う構成です。</p>'+
+    '<p>このモデルは順位付け（AUC）を改善しません。学習しているのは'+
+    '<b>「その価格帯で市場が高すぎるか安すぎるか」というキャリブレーションのズレ</b>で、'+
+    'だから馬を並べ替える力は無いのに回収率には効きます。</p>'+
+    '<p>学習は判定のたびに当日より前の全データ（127,757行）でやり直します。'+
+    '木は100本固定、6シードの平均。early stopping は使いません——'+
+    '使うと木の本数が1〜87本で乱高下し、<b>同じコードの再実行で結論が変わる</b>ことが分かったためです。</p>'+
+
+    '<h3>ここに辿り着くまでに捨てたもの</h3>'+
+    '<p>候補は6つの関門で落としました。落ちたものを見るほうが、残ったものの意味が分かります。</p>'+
+    '<div class="dt"><table><thead><tr><th>関門</th><th>落ちたもの</th></tr></thead><tbody>'+
+    '<tr><td>層化帰無 FWER</td><td>無差別スイープ88,595セル全部（p=0.41）</td></tr>'+
+    '<tr><td>先読みの修正</td><td>能力ばらつき系 123%→101.5%</td></tr>'+
+    '<tr><td>裾依存</td><td>乖離単独の単勝 上位10本除外で96%→79%</td></tr>'+
+    '<tr><td>シード安定性</td><td>旧fitでFWERを通った13セル中13セル</td></tr>'+
+    '<tr><td>オッズ摂動</td><td>4番人気複勝 110.2%→98.8%</td></tr>'+
+    '</tbody></table></div>'+
+    '<p>特に重要なのが最後の<b>オッズ摂動テスト</b>です。確定オッズで110.2%出ていた条件が、'+
+    'オッズを±5%揺らすと102.0%、±10%で98.8%まで落ちました。'+
+    '我々は締切前に賭けるので、確定オッズを前提にした条件は実運用で崩れます。'+
+    '<b>ROIが最も高い条件ほど、この検定で落ちました。</b></p>'+
+    '<div class="dt"><table><thead><tr><th>摂動</th><th>採用条件</th><th>乖離を外した場合</th></tr></thead><tbody>'+
+    '<tr><td>なし</td><td class="num">113.8</td><td class="num">100.3</td></tr>'+
+    '<tr><td>±5%</td><td class="num hi">112.7</td><td class="num lo">99.4</td></tr>'+
+    '<tr><td>±10%</td><td class="num hi">111.2</td><td class="num lo">98.4</td></tr>'+
+    '<tr><td>±20%</td><td class="num hi">106.8</td><td class="num lo">95.5</td></tr>'+
+    '<tr><td>±40%</td><td class="num lo">95.8</td><td class="num lo">—</td></tr>'+
+    '</tbody></table></div>'+
+    '<p>±40%で崩壊します。前夜→朝のオッズ変動は中央値15.2%、90%点43.6%。'+
+    '<b>朝のオッズはこの崩壊域にかかっている</b>ので、判定を発走30分前と10分前に置いています。</p>'+
+
+    '<h3>成績と、正直な限界</h3>'+
+    '<div class="dt"><table><tbody>'+
+    '<tr><td>ROI</td><td class="num hi">113.1%</td></tr>'+
+    '<tr><td>3分割（早期/中期/後期）</td><td class="num">119.3 / 106.1 / 119.3</td></tr>'+
+    '<tr><td>的中率</td><td class="num">73.5%</td></tr>'+
+    '<tr><td>最大ドローダウン</td><td class="num">1.5%</td></tr>'+
+    '<tr><td>最長連敗</td><td class="num">7</td></tr>'+
+    '<tr><td>日単位で勝てる確率</td><td class="num">98.2%</td></tr>'+
+    '<tr><td>対象率</td><td class="num">全レースの8.2%</td></tr>'+
+    '</tbody></table></div>'+
+    '<ul>'+
+    '<li>標本は2025年1月以降の487点のみ。アウトオブサンプル予測が必要なためこれ以上遡れません</li>'+
+    '<li>探索の末に到達した条件で、そこへ至る経路の探索は多重比較の罰則に含まれていません</li>'+
+    '<li>クラス絞りは成績を見てから決めたので、基準版の107.2%のほうを実力と見るべきです</li>'+
+    '<li>1勝クラス94.0%・OP重賞93.5%では成立しません</li>'+
+    '<li>少額から試すのが妥当です</li>'+
+    '</ul>'+
+
+    '<h3>画面の数字をどう使うか</h3>'+
+    '<p>各レースの出走馬カードに出る3つの数字は、性格がまったく違います。'+
+    '同じように扱うと必ず間違えます。</p>'+
+
+    '<p><b>1. 3着内の推定 ― 市場の意見であって、予想ではない</b></p>'+
+    '<p>単勝オッズから計算しているので、これは<b>市場が言っていることを整形しただけ</b>です。'+
+    'モデルの意見は一切入っていません。だから「推定が高いから買う」は'+
+    '「人気だから買う」と同じことで、何の優位もありません。</p>'+
+    '<p>計算にPlackett-Luceという方法を使いますが、これは各馬が独立に走ると仮定するため、'+
+    '<b>上位人気の3着内率を高く見積もりすぎます</b>。1番人気は理論74.5%に対し実際65.7%、'+
+    '6番人気は理論18.2%に対し実際21.0%。9,363レースで測ったこのズレを補正してあります。</p>'+
+    '<p>使い道は<b>複勝配当との掛け算</b>です。それが「複勝の期待値」で、'+
+    '100%を超えていれば単勝プールと複勝プールの評価が食い違っているということ。'+
+    'ただし<b>どちらが正しいかは分かりません</b>し、朝は複勝プールが薄いので'+
+    '配当の幅（例：2.0〜6.6倍）が広く、数字が暴れます。幅の狭い馬ほど信用できます。</p>'+
+
+    '<p><b>2. 乖離 ― 避ける側がいちばん確実</b></p>'+
+    '<p>同じオッズ帯・同じ頭数の馬と比べた実績です。</p>'+
+    '<div class="dt"><table><thead><tr><th>乖離</th><th>単勝ROI</th><th>複勝ROI</th><th>頭数</th></tr></thead><tbody>'+
+    '<tr><td>+0.20以上</td><td class="num">88.9%</td><td class="num">80.0%</td><td class="num">8,250</td></tr>'+
+    '<tr><td>+0.05〜+0.20</td><td class="num">85〜88%</td><td class="num">76%</td><td class="num">19,468</td></tr>'+
+    '<tr><td>−0.05〜+0.05</td><td class="num">78.9%</td><td class="num">75.9%</td><td class="num">21,945</td></tr>'+
+    '<tr><td>−0.20〜−0.05</td><td class="num">60〜68%</td><td class="num">67〜72%</td><td class="num">20,097</td></tr>'+
+    '<tr><td class="lo">−0.20以下</td><td class="num lo">45.4%</td><td class="num lo">54.4%</td><td class="num">11,245</td></tr>'+
+    '</tbody></table></div>'+
+    '<p>注目すべきは<b>上下の非対称</b>です。プラス側で最も良い帯が単勝88.9%なのに対し、'+
+    'マイナス側で最も悪い帯は45.4%。全体平均73.3%からの落ち込みが、'+
+    '<b>マイナス側は28ポイント、プラス側は15ポイントしかありません。</b></p>'+
+    '<p>これは偶然ではありません。2025年上半期だけで軸を選び、中期＋後期で凍結して評価したところ、'+
+    '<b>過大評価側は再現し（FWER p=0.0075）、過小評価側は消えました</b>（max z=1.28、帰無95%点2.31）。'+
+    '市場の誤りは「買われすぎ」方向にしか安定して存在しない、ということです。</p>'+
+    '<ul>'+
+    '<li><b>−0.20以下 → 避ける。</b>これがいちばん信用できる使い方</li>'+
+    '<li><b>+0.20以上 → 他よりマシ、ただし単勝88.9%でまだ負ける。</b>'+
+    '「割安に見える」と「買って儲かる」は別。控除率20%を埋めきれていない</li>'+
+    '<li><b>±0.05以内 → 読まない。</b>78.9%で全体平均とほぼ同じ。誤差です</li>'+
+    '</ul>'+
+    '<p>乖離が買いに効くのは<b>1か所だけ</b>。m3≥0.75のレースの2番人気に重ねたときに、'+
+    '100.3%→107.2%と損益分岐を超えます。それ以外の場所では、'+
+    '<b>乖離は「買う理由」ではなく「避ける理由」として使うのが正しい</b>使い方です。</p>'+
+
+    '<p><b>3. それでも買うならのROI ― 平均であって予測ではない</b></p>'+
+    '<p>同じ「人気順位 × 市場集中度 × 乖離の符号」だった過去レースの平均です。'+
+    'サンプルは数百〜数千件で、的中率は数%〜70%とばらばら。'+
+    '<b>その1レースで何が起きるかについては何も言っていません。</b>'+
+    '「95%」は「100回買えば5%減る見込み」であって、'+
+    '「この馬が95%の確率でどうこう」ではありません。</p>'+
+
+    '<h3>結局どう行動するか</h3>'+
+    '<ul>'+
+    '<li><b>買うのは、判定が「買」のときだけ。</b>それ以外は全部見送り</li>'+
+    '<li>読み物として眺めるぶんには、<b>乖離−0.20以下の馬を「消し」の参考にする</b>のがいちばん筋がいい</li>'+
+    '<li>複勝の期待値が100%を超えている馬は、2つのプールの食い違いを表している。'+
+    '面白い現象だが、それが利益になる保証はない</li>'+
+    '<li><b>条件が惜しいからといって緩めない。</b>これが一番やってはいけないこと</li>'+
+    '</ul>'+
+
+    '<h3>「それでも買うなら」の数字について</h3>'+
+    '<p>各レースに出している期待ROIは、同じ「人気順位 × 市場集中度 × 乖離の符号」だった'+
+    '過去レースの平均です。<b>ほぼすべて100%未満＝期待値マイナス</b>で、買いの推奨ではありません。</p>'+
+    '<p>唯一100%を超えるのが「乖離≥0.2 かつ8〜30倍の単勝」で101.6%。'+
+    'ただし日単位で勝てる確率は57%、最長連敗77、上位3本の配当を除くと98.4%。'+
+    '<b>控除率をほぼ取り返しただけで、優位は誤差の範囲</b>です。</p>'+
+
+    '<h3>該当ゼロは正常</h3>'+
+    '<p>対象は全レースの8.2%。12レース開催で約1点、ゼロの日も普通にあります。'+
+    '<b>「買わない」はこの判定器の正常な出力</b>であって、壊れているわけではありません。</p>'+
+    '<p>実際、9月21日に当初推奨しかけた条件（確定オッズで110.2%）は、'+
+    '孤立ピーク・検証期間89.1%・±5%摂動で100%超が25回中12%という理由で撤回しました。'+
+    '<b>惜しいから条件を緩める</b>——これが、6つの関門をすべて無意味にする行為です。</p>'+
+    '</div>';
+  }
+
+  function cond(name,desc,val,ok){
+    const mk=ok===null?'<span class="cmark">·</span>':ok?'<span class="cmark ok">✓</span>':'<span class="cmark ng">✕</span>';
+    return '<div class="cond">'+mk+'<div class="cname">'+name+'<small>'+desc+'</small></div>'+
+           '<div class="mono">'+val+'</div></div>';
+  }
+
+  function renderLog(){
+    const el=document.getElementById("log"); if(!el) return;
+    const s=STATE;
+    if(!s||!Array.isArray(s.history)||!s.history.length){el.textContent="判定履歴はまだありません。";return;}
+    el.innerHTML="判定履歴： "+s.history.slice(-14).map(h=>
+      '<span>'+esc(h.time)+' R'+h.r+'('+h.lead+'分前) '+(h.verdict==="bet"?"★買い":"—")+'</span>').join("");
+  }
+
+  function render(){
+    const rt=route();
+    document.getElementById("clock").textContent=fmt(nowMin());
+    document.getElementById("back").hidden = rt.view==="board";
+    const x=rt.view==="race"?raceOf(rt.r):null;
+    document.getElementById("htitle").textContent =
+      rt.view==="race" ? ("R"+rt.r+"　"+(x?x.name:"")) :
+      rt.view==="about" ? "この判定は何をしているのか" : "2026-09-21 阪神 ／ 2番人気の複勝";
+    document.getElementById("main").innerHTML =
+      rt.view==="race" ? raceView(rt.r) : rt.view==="about" ? aboutView() : board();
+    if(rt.view==="board"){
+      renderLog();
+      document.querySelectorAll(".rcard").forEach(b=>{
+        b.addEventListener("click",()=>{location.hash="#/r/"+b.dataset.r; window.scrollTo(0,0);});
+      });
+      const tl=document.getElementById("tolink");
+      if(tl) tl.addEventListener("click",()=>{location.hash="#/about"; window.scrollTo(0,0);});
+    }
+  }
+
+  document.getElementById("back").addEventListener("click",()=>{location.hash="#/";window.scrollTo(0,0);});
+  window.addEventListener("hashchange",render);
+  render();
+  setInterval(render,20000);
+
+  /* データはページに埋め込む。db を使うと組織内限定になり
+     リンク共有ができなくなるため（Artifactの仕様）。
+     判定のたびにページごと再公開する。開いている閲覧者には自動で届く。 */
+</script>
